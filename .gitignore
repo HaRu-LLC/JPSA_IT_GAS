@@ -1,0 +1,21 @@
+.DS_Store
+**/.DS_Store
+
+# Local Apps Script project bindings. These contain environment-specific IDs.
+**/.clasp.json
+
+# Real or generated data must not be published.
+*.xlsx
+*.xls
+features/**/local-preview/
+
+# Local operation logs and generated reports.
+features/**/ops/reports/
+*.log
+
+# Local secrets and dependency caches.
+.env
+.env.*
+node_modules/
+.venv/
+__pycache__/

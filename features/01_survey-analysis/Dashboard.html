@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>JPSA IT部会 勉強会アンケート分析</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --blue-50: #f0f9ff;
+      --blue-200: #c0e4ff;
+      --blue-600: #008bf2;
+      --blue-900: #0055ad;
+      --green-50: #e6f5ec;
+      --green-600: #259d63;
+      --green-900: #115a36;
+      --orange-50: #ffeee2;
+      --orange-600: #fb5b01;
+      --red-50: #fdeeee;
+      --red-600: #fe3939;
+      --gray-50: #f8f8fb;
+      --gray-100: #f1f1f4;
+      --gray-200: #cccccc;
+      --gray-536: #767676;
+      --gray-700: #4d4d4d;
+      --gray-900: #1a1a1a;
+      --surface: #ffffff;
+      --line: #dfe3ea;
+      --shadow: 0 1px 2px rgba(26, 26, 26, .06), 0 10px 28px rgba(26, 26, 26, .06);
+      --radius: 8px;
+      --primary: var(--blue-900);
+      --primary-light: var(--blue-50);
+      --success: var(--green-600);
+      --warning: var(--orange-600);
+      --danger: var(--red-600);
+      --bg: var(--gray-50);
+      --card: var(--surface);
+      --text: var(--gray-900);
+      --text-secondary: var(--gray-536);
+      --border: var(--line);
+      --sidebar-w: 232px;
+      font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { min-width:320px; font-family:inherit; background:var(--bg); color:var(--text); }
+    button, select { font:inherit; }
+
+    /* Sidebar */
+    .sidebar {
+      position:fixed; left:0; top:0; bottom:0; width:var(--sidebar-w);
+      background:var(--surface); color:var(--gray-900); padding:20px 16px; z-index:100;
+      display:flex; flex-direction:column; gap:20px; border-right:1px solid var(--line);
+    }
+    .sidebar-logo { padding:0 0 16px; font-size:15px; font-weight:700; line-height:1.45; border-bottom:1px solid var(--line); margin-bottom:0; }
+    .sidebar-logo small { display:block; color:var(--gray-536); font-weight:400; font-size:12px; line-height:1.5; margin-top:8px; }
+    .nav-item {
+      min-height:42px; padding:8px 10px; cursor:pointer; font-size:14px; display:grid; grid-template-columns:24px 1fr; align-items:center; gap:8px;
+      border:0; background:transparent; text-align:left; border-radius:7px; color:var(--gray-700); font-weight:600; transition: background .15s;
+    }
+    .nav-item:hover { background:var(--gray-50); }
+    .nav-item.active { background:var(--blue-50); color:var(--blue-900); font-weight:700; }
+    .nav-icon {
+      width:20px; height:20px; border-radius:5px; display:grid; place-items:center;
+      color:var(--blue-900); background:var(--blue-50); font-size:11px; font-weight:800;
+    }
+    .sidebar-footer { margin-top:auto; padding:0; color:var(--gray-536); font-size:11px; line-height:1.6; opacity:1; }
+
+    /* Main */
+    .main { margin-left:var(--sidebar-w); padding:24px clamp(18px, 3vw, 40px) 40px; min-height:100vh; min-width:0; }
+
+    /* Header */
+    .page-header {
+      display:grid; grid-template-columns:minmax(0, 1fr) 288px; gap:20px; align-items:start;
+      margin-bottom:18px;
+    }
+    .eyebrow { color:var(--blue-900); font-size:12px; font-weight:700; letter-spacing:0; margin:0 0 8px; }
+    .page-title { font-size:clamp(22px, 2.4vw, 32px); line-height:1.25; font-weight:800; color:var(--text); }
+    .subtitle { margin:10px 0 0; color:var(--gray-700); font-size:14px; line-height:1.8; max-width:880px; }
+    .meta-card { border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); padding:14px 16px; box-shadow:var(--shadow); }
+    .meta-row { display:flex; justify-content:space-between; gap:14px; padding:6px 0; color:var(--gray-700); font-size:12px; border-bottom:1px solid var(--gray-100); }
+    .meta-row:last-child { border-bottom:0; }
+    .meta-row strong { color:var(--gray-900); font-weight:700; text-align:right; }
+    .updated-at { font-size:12px; color:var(--text-secondary); text-align:right; }
+
+    /* Filters */
+    .filter-bar {
+      display:grid; grid-template-columns:repeat(6, minmax(116px, 1fr)); gap:10px; align-items:end;
+      padding:14px; background:var(--card); border-radius:var(--radius); border:1px solid var(--border);
+      margin-bottom:18px;
+    }
+    .filter-bar label { align-self:center; font-size:12px; color:var(--text-secondary); font-weight:700; }
+    .filter-bar select {
+      height:38px; padding:0 10px; border:1px solid var(--border); border-radius:7px;
+      font-size:13px; background:white; color:var(--gray-900); min-width:0;
+    }
+    .filter-reset {
+      min-height:38px; padding:6px 14px; background:var(--blue-50); color:var(--blue-900);
+      border:1px solid var(--blue-200); border-radius:7px; cursor:pointer; font-size:13px; font-weight:700;
+    }
+
+    /* Cards */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:14px; }
+    .kpi-card {
+      min-height:132px; background:var(--card); border-radius:var(--radius); padding:16px; border:1px solid var(--border);
+      text-align:left; box-shadow:var(--shadow);
+    }
+    .kpi-label { font-size:12px; line-height:1.5; color:var(--text-secondary); margin-bottom:10px; font-weight:700; }
+    .kpi-value { font-size:clamp(28px, 4vw, 42px); line-height:1; font-weight:800; color:var(--gray-900); }
+    .kpi-sub { font-size:12px; color:var(--gray-700); line-height:1.6; margin-top:10px; }
+    .kpi-card.highlight { border-color:var(--blue-200); background:linear-gradient(180deg, #ffffff 0%, var(--blue-50) 100%); }
+    .kpi-card.highlight .kpi-value { color:var(--blue-900); }
+
+    /* Chart containers */
+    .chart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(400px,1fr)); gap:14px; margin-bottom:14px; }
+    .chart-card {
+      background:var(--card); border-radius:var(--radius); padding:16px; border:1px solid var(--border);
+      box-shadow:var(--shadow); min-width:0;
+    }
+    .chart-title { font-size:15px; line-height:1.5; font-weight:800; margin-bottom:14px; color:var(--text); }
+    .chart-wrapper { position:relative; width:100%; }
+
+    /* Table */
+    .data-table { width:100%; border-collapse:collapse; font-size:12px; background:var(--surface); }
+    .data-table th {
+      background:var(--gray-50); color:var(--gray-536); padding:9px 8px; text-align:left;
+      font-weight:800; font-size:12px; position:sticky; top:0; border-bottom:1px solid var(--line);
+    }
+    .data-table td { padding:10px 8px; border-bottom:1px solid var(--gray-100); color:var(--gray-700); line-height:1.55; vertical-align:top; }
+    .data-table td:first-child { color:var(--gray-900); font-weight:700; }
+    .data-table tr:hover { background:var(--gray-50); }
+    .table-wrapper { max-height:400px; overflow-y:auto; border-radius:var(--radius); border:1px solid var(--border); }
+
+    /* Badge */
+    .badge {
+      display:inline-flex; align-items:center; min-height:24px; padding:2px 8px; border-radius:999px;
+      font-size:11px; font-weight:800; white-space:nowrap;
+    }
+    .badge-blue { background:var(--blue-50); color:var(--blue-900); }
+    .badge-green { background:var(--green-50); color:var(--green-900); }
+    .badge-yellow { background:var(--orange-50); color:#9f2d00; }
+    .badge-red { background:var(--red-50); color:#aa0000; }
+    .badge-purple { background:#F3E8FD; color:#7627BB; }
+
+    /* Word cloud */
+    .word-cloud { display:flex; flex-wrap:wrap; gap:6px; padding:12px; justify-content:center; }
+    .word-tag {
+      padding:4px 10px; border-radius:16px; background:var(--blue-50); color:var(--blue-900);
+      font-weight:700; cursor:default;
+    }
+
+    /* Tab pages */
+    .tab-page { display:none; }
+    .tab-page.active { display:block; }
+
+    /* Loading */
+    .loading { text-align:center; padding:60px; color:var(--text-secondary); }
+    .spinner { display:inline-block; width:32px; height:32px; border:3px solid var(--border);
+      border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Month selector for tab5 */
+    .month-selector { display:flex; gap:8px; align-items:center; margin-bottom:16px; }
+    .month-btn {
+      padding:8px 18px; border:2px solid var(--primary); border-radius:8px;
+      background:white; color:var(--primary); font-weight:600; cursor:pointer; font-size:14px;
+    }
+    .month-btn.active { background:var(--primary); color:white; }
+
+    /* Comparison */
+    .cmp-up { color:var(--green-900); }
+    .cmp-down { color:var(--red-600); }
+    .cmp-neutral { color:var(--text-secondary); }
+    .ops-metric { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .ops-metric:last-child { border-bottom:none; }
+    .ops-metric-main { font-weight:600; }
+    .ops-metric-sub { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+    .ops-metric-value { text-align:right; white-space:nowrap; font-weight:700; }
+    .voice-sample { border:1px solid var(--gray-100); border-radius:var(--radius); background:var(--gray-50); padding:12px; margin-bottom:10px; }
+    .voice-sample:last-child { border-bottom:none; }
+    .voice-meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; color:var(--text-secondary); font-size:12px; }
+    .voice-text { line-height:1.7; color:var(--text); }
+
+    /* Responsive */
+    @media(max-width:1100px) {
+      .sidebar {
+        position:static; width:auto; height:auto; border-right:0; border-bottom:1px solid var(--line);
+      }
+      .main { margin-left:0; }
+      .page-header { grid-template-columns:1fr; }
+      .meta-card { width:100%; }
+      .chart-grid { grid-template-columns:1fr; }
+    }
+
+    @media(max-width:768px) {
+      .sidebar { padding:16px 12px; }
+      .nav-item { padding:10px; }
+      .main { padding:18px 12px 28px; }
+      .filter-bar { grid-template-columns:1fr; }
+      .kpi-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    JPSA IT部会<br>勉強会アンケート分析
+    <small>Dashboard v2.0</small>
+  </div>
+  <button type="button" class="nav-item active" onclick="switchTab(0)" aria-current="page">
+    <span class="nav-icon">01</span><span class="nav-label">概要サマリー</span>
+  </button>
+  <button type="button" class="nav-item" onclick="switchTab(1)">
+    <span class="nav-icon">02</span><span class="nav-label">参加者分析</span>
+  </button>
+  <button type="button" class="nav-item" onclick="switchTab(2)">
+    <span class="nav-icon">03</span><span class="nav-label">声と関心</span>
+  </button>
+  <button type="button" class="nav-item" onclick="switchTab(3)">
+    <span class="nav-icon">04</span><span class="nav-label">教訓 & アクション</span>
+  </button>
+  <button type="button" class="nav-item" onclick="switchTab(4)">
+    <span class="nav-icon">05</span><span class="nav-label">指定月 特別分析</span>
+  </button>
+  <div class="sidebar-footer">Powered by GAS WebApp</div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">運営判断のための月次ビュー</p>
+      <div class="page-title" id="pageTitle">概要サマリー</div>
+      <p class="subtitle">全体像から詳細へ進む構造に整理し、見るべき指標・比較対象・次に取る行動を同じ画面で確認します。</p>
+    </div>
+    <section class="meta-card" aria-label="データ更新情報">
+      <div class="meta-row"><span>対象</span><strong>アンケート回答</strong></div>
+      <div class="meta-row"><span>表示</span><strong id="pageTitleMeta">概要サマリー</strong></div>
+      <div class="meta-row"><span>更新情報</span><strong class="updated-at" id="updatedAt"></strong></div>
+      <div class="meta-row"><span>状態</span><strong>処理済みデータ</strong></div>
+    </section>
+  </div>
+  <div id="healthNotice" style="display:none;background:#FEF7E0;border:1px solid #F9AB00;color:#5F3A00;padding:10px 12px;border-radius:8px;margin-bottom:12px;"></div>
+
+  <!-- Global Filter -->
+  <div class="filter-bar" id="globalFilter">
+    <label>開催月</label><select id="fMonth" onchange="applyFilters()"><option value="">全て</option></select>
+    <label>職業</label><select id="fJob" onchange="applyFilters()"><option value="">全て</option></select>
+    <label>認知経路</label><select id="fChannel" onchange="applyFilters()"><option value="">全て</option></select>
+    <label>受講状況</label><select id="fStudyStatus" onchange="applyFilters()"><option value="">全て</option></select>
+    <label>参加者</label><select id="fRepeater" onchange="applyFilters()"><option value="">全員</option><option>リピーター</option><option>初参加</option></select>
+    <button class="filter-reset" onclick="resetFilters()">リセット</button>
+  </div>
+
+  <div id="loadingIndicator" class="loading"><div class="spinner"></div><p style="margin-top:12px">データを読み込み中...</p></div>
+
+  <!-- ===== Tab 0: 概要 ===== -->
+  <div class="tab-page" id="tab0">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">施策検証ボード</div>
+        <div id="opsValidationBoard"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">データ信頼度</div>
+        <div id="dataReliabilityBoard"></div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">月別 回答数推移</div><div class="chart-wrapper"><canvas id="chartMonthlyCount"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">月別 平均達成度</div><div class="chart-wrapper"><canvas id="chartMonthlySat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">達成度分布</div><div class="chart-wrapper"><canvas id="chartSatDist"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">登録率比較</div><div class="chart-wrapper"><canvas id="chartRegRates"></canvas></div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">ファネル（回答→満足度4+→LINE→確定/意向込み申込）</div><div class="chart-wrapper"><canvas id="chartFunnel"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">意向スコア分布（High / Medium / Low）</div><div class="chart-wrapper"><canvas id="chartIntent"></canvas></div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">KPIアラート</div>
+      <div id="alertList" style="line-height:1.8;color:var(--text)"></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">意思決定カード（示唆 + 推奨アクション）</div>
+      <div id="decisionCards" style="line-height:1.8;color:var(--text)"></div>
+    </div>
+  </div>
+
+  <!-- ===== Tab 1: 参加者分析 ===== -->
+  <div class="tab-page" id="tab1">
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">職業分布</div><div class="chart-wrapper"><canvas id="chartJob"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">認知経路</div><div class="chart-wrapper"><canvas id="chartChannel"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">参加目的カテゴリ</div><div class="chart-wrapper"><canvas id="chartPurpose"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">リピーター vs 初参加</div><div class="chart-wrapper"><canvas id="chartRepeater"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">受講状況</div><div class="chart-wrapper"><canvas id="chartStudyStatus"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">リピーター頻度帯（1回/2回/3回/4回以上）</div><div class="chart-wrapper"><canvas id="chartRepeatFreq"></canvas></div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">リピーター頻度帯別 KPI</div>
+        <div class="table-wrapper"><table class="data-table" id="tableRepeatFreq"></table></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">主要セグメント比較（職業×受講歴×認知経路×目的）</div>
+        <div class="table-wrapper"><table class="data-table" id="tableSegments"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Tab 2: Voice of Customer ===== -->
+  <div class="tab-page" id="tab2">
+    <div class="chart-card">
+      <div class="chart-title">参加目的 VOC</div>
+      <div class="chart-grid" style="margin-bottom:8px">
+        <div class="chart-card"><div class="chart-title">頻出ワード（参加目的）</div><div class="word-cloud" id="purposeWordCloud"></div></div>
+        <div class="chart-card"><div class="chart-title">ワード出現回数 Top 20（参加目的）</div><div class="chart-wrapper"><canvas id="chartPurposeWordBar"></canvas></div></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <button class="filter-reset" onclick="refreshGeminiVocSummary('purpose')">Geminiで要約更新（参加目的）</button>
+      </div>
+      <div id="purposeSummary" style="line-height:1.8;color:var(--text);margin-bottom:12px"></div>
+      <div class="table-wrapper"><table class="data-table" id="tablePurpose"></table></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">感想・メッセージ VOC</div>
+      <div class="chart-grid" style="margin-bottom:8px">
+        <div class="chart-card"><div class="chart-title">頻出ワード（感想）</div><div class="word-cloud" id="commentWordCloud"></div></div>
+        <div class="chart-card"><div class="chart-title">ワード出現回数 Top 20（感想）</div><div class="chart-wrapper"><canvas id="chartCommentWordBar"></canvas></div></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <button class="filter-reset" onclick="refreshGeminiVocSummary('comment')">Geminiで要約更新（感想）</button>
+      </div>
+      <div id="commentSummary" style="line-height:1.8;color:var(--text);margin-bottom:12px"></div>
+      <div class="table-wrapper"><table class="data-table" id="tableComments"></table></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">月別テキスト要約</div>
+      <div class="table-wrapper"><table class="data-table" id="tableMonthlyTextSummary"></table></div>
+    </div>
+    <div class="chart-grid" style="margin-top:16px">
+      <div class="chart-card">
+        <div class="chart-title">申込ありの声 / 意向ありの声</div>
+        <div id="voiceWithIntent"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">申込なしの声</div>
+        <div id="voiceWithoutIntent"></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">イベント別 原文一覧 <span id="eventVoiceCount" class="badge badge-blue"></span><span class="ops-metric-sub"> イベント名列がない場合は開催月単位</span></div>
+      <div class="table-wrapper"><table class="data-table" id="tableEventVoices"></table></div>
+    </div>
+  </div>
+
+  <!-- ===== Tab 3: 教訓 & アクション ===== -->
+  <div class="tab-page" id="tab3">
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">実行アクション カテゴリ分布</div><div class="chart-wrapper"><canvas id="chartActionCat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">月別 達成度5の割合推移</div><div class="chart-wrapper"><canvas id="chartSat5Trend"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">ドライバー分析（確定申込寄与）</div><div class="chart-wrapper"><canvas id="chartDriver"></canvas></div></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">ドライバー詳細（正/負）</div>
+      <div class="table-wrapper"><table class="data-table" id="tableDriver"></table></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">成功指標つき施策表</div>
+      <div class="table-wrapper"><table class="data-table" id="tableInitiatives"></table></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">要フォローリスト <span id="followUpListCount" class="badge badge-yellow"></span></div>
+      <div class="table-wrapper"><table class="data-table" id="tableFollowUpList"></table></div>
+    </div>
+    <div class="chart-card" style="margin-top:16px">
+      <div class="chart-title">実行アクション（原文一覧）</div>
+      <div class="table-wrapper"><table class="data-table" id="tableActions"></table></div>
+    </div>
+  </div>
+
+  <!-- ===== Tab 4: 指定月分析 ===== -->
+  <div class="tab-page" id="tab4">
+    <div class="month-selector" id="monthSelector">
+      <span style="font-weight:600;">分析する月:</span>
+      <select id="monthSelect" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;min-width:180px;"></select>
+      <button class="month-btn" id="loadMonthBtn" onclick="loadSelectedMonth()">表示</button>
+    </div>
+    <div id="monthAnalysisContent">
+      <p style="color:var(--text-secondary)">上の選択ボックスから分析月を選んでください</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== State =====
+let rawData = { headers: [], rows: [] };
+let filteredRows = [];
+let availableMonths = [];
+let charts = {};
+let repeatBandByKey = {};
+let purposeAiSummary = '';
+let commentAiSummary = '';
+let dashboardConfig = { items: [], values: {} };
+let dashboardMeta = {};
+const REPEAT_BANDS = ['1回', '2回', '3回', '4回以上'];
+const COLORS = ['#1A73E8','#34A853','#FBBC04','#EA4335','#7627BB','#E37400','#0D652D','#185ABC','#B31412','#9334E6'];
+const LOCAL_PREVIEW_DATA = { full: { headers: [], rows: [] }, config: { items: [], values: {} }, meta: {} };
+
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', () => {
+  loadLocalPreviewDataIfNeeded_().then(() => Promise.all([
+    runGAS('getFullData'),
+    runGAS('getTrendData'),
+    runGAS('getFilterOptions'),
+    runGAS('getAvailableMonths'),
+    runGAS('getDataHealth'),
+    runGAS('getDashboardConfig').catch(() => ({ items: [], values: {} })),
+    runGAS('getDashboardMeta').catch(() => ({}))
+  ])).then(([full, _trend, filters, months, health, config, meta]) => {
+    const safeFull = (full && typeof full === 'object') ? full : { headers: [], rows: [] };
+    const safeFilters = (filters && typeof filters === 'object') ? filters : {};
+    const safeMonths = Array.isArray(months) ? months : [];
+    const safeHealth = (health && typeof health === 'object') ? health : { ok: true, message: '' };
+    dashboardConfig = normalizeDashboardConfig_(config);
+    dashboardMeta = (meta && typeof meta === 'object') ? meta : {};
+    renderUpdatedAt();
+
+    if (!Array.isArray(safeFull.rows) || safeFull.rows.length === 0) {
+      document.getElementById('loadingIndicator').innerHTML =
+        '<p style="color:#5F6368;line-height:1.8">' +
+        '表示できる分析データがまだありません。<br>' +
+        'スプレッドシートに戻って「IT部会分析 → 全データを再処理する」を実行し、' +
+        '完了後にこのページを再読み込みしてください。' +
+        '</p>';
+      return;
+    }
+
+    rawData = safeFull;
+    normalizeMonthValuesInRows();
+    buildRepeatBandMapFromAllRows_();
+    const derivedMonths = uniqueFromRows('開催月').sort((a, b) => monthSortKey(a) - monthSortKey(b));
+    availableMonths = safeMonths.length ? safeMonths : derivedMonths;
+    populateFilters(mergeFallbackFilters(safeFilters));
+    buildMonthSelector(availableMonths);
+    renderHealthNotice(safeHealth);
+    applyFilters();
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('tab0').classList.add('active');
+  }).catch(err => {
+    document.getElementById('loadingIndicator').innerHTML =
+      '<p style="color:#EA4335">データの読み込みに失敗しました: ' + escH(String(err)) + '</p>';
+  });
+});
+
+function loadLocalPreviewDataIfNeeded_() {
+  if (isGASEnvironment_() || location.protocol !== 'file:' || window.LOCAL_PREVIEW_DATA) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'local-preview/dashboard-local-data.js';
+    script.onload = resolve;
+    script.onerror = resolve;
+    document.head.appendChild(script);
+  });
+}
+
+function localPreviewData_() {
+  return window.LOCAL_PREVIEW_DATA || LOCAL_PREVIEW_DATA;
+}
+
+function runGAS(fn, ...args) {
+  if (!isGASEnvironment_()) {
+    return Promise.resolve(runLocalPreviewGAS_(fn, ...args));
+  }
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject)
+      [fn](...args);
+  });
+}
+
+function isGASEnvironment_() {
+  return typeof google !== 'undefined' && google.script && google.script.run;
+}
+
+function runLocalPreviewGAS_(fn, ...args) {
+  if (location.protocol !== 'file:') {
+    throw new Error('ローカルプレビューデータはfile://表示でのみ使用します。');
+  }
+  const localData = localPreviewData_();
+  const full = localData.full || { headers: [], rows: [] };
+  if (fn === 'getFullData') return full;
+  if (fn === 'getWordCloudData') return [];
+  if (fn === 'getTrendData') return { headers: [], rows: [] };
+  if (fn === 'getFilterOptions') return buildLocalFilterOptions_(full);
+  if (fn === 'getAvailableMonths') return buildLocalMonths_(full);
+  if (fn === 'getDataHealth') return buildLocalDataHealth_(full);
+  if (fn === 'getDashboardConfig') return localData.config || { items: [], values: {} };
+  if (fn === 'getDashboardMeta') return localData.meta || {};
+  if (fn === 'getMonthDetailData') return buildLocalMonthDetailData_(full, args[0]);
+  if (fn === 'generateGeminiVocSummary') return 'ローカルプレビューではGemini要約を生成しません。GAS上で実行してください。';
+  throw new Error(`ローカルプレビュー未対応API: ${fn}`);
+}
+
+function normalizeDashboardConfig_(config) {
+  const safeConfig = (config && typeof config === 'object') ? config : {};
+  const items = Array.isArray(safeConfig.items) ? safeConfig.items : [];
+  const values = (safeConfig.values && typeof safeConfig.values === 'object') ? safeConfig.values : {};
+  items.forEach(item => {
+    if (item && item.key && values[item.key] === undefined) values[item.key] = item.value;
+  });
+  return { ...safeConfig, items, values };
+}
+
+function dashboardSetting_(key, fallback) {
+  const values = (dashboardConfig && dashboardConfig.values) || {};
+  return values[key] !== undefined && values[key] !== null && values[key] !== '' ? values[key] : fallback;
+}
+
+function renderUpdatedAt() {
+  const el = document.getElementById('updatedAt');
+  if (!el) return;
+  const revision = dashboardMeta.revision || 'unknown';
+  const savedAt = dashboardMeta.savedAt || 'unknown';
+  el.textContent = `revision: ${revision} / savedAt: ${savedAt}`;
+}
+
+// ===== Core Helpers =====
+function ci(name) { return rawData.headers.indexOf(name); }
+
+function monthSortKey(v) {
+  const normalized = normalizeMonthString(v);
+  const m = String(normalized || '').match(/(\d{4})年(\d{1,2})月/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
+  return Number(m[1]) * 100 + Number(m[2]);
+}
+
+function normalizeMonthString(v) {
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date && !isNaN(v)) return `${v.getFullYear()}年${v.getMonth() + 1}月`;
+  const s = String(v).trim();
+  if (!s) return '';
+  const m = s.match(/(\d{4})年\s*(\d{1,2})月/);
+  if (m) return `${Number(m[1])}年${Number(m[2])}月`;
+  const iso = s.match(/(\d{4})[-\/](\d{1,2})(?:[-\/](\d{1,2}))?(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?/);
+  if (iso) return `${Number(iso[1])}年${Number(iso[2])}月`;
+  const d = new Date(s);
+  if (!isNaN(d)) return `${d.getFullYear()}年${d.getMonth() + 1}月`;
+  return s;
+}
+
+function normalizeMonthValuesInRows() {
+  const idx = ci('開催月');
+  if (idx < 0) return;
+  rawData.rows = rawData.rows.map(r => {
+    const copied = r.slice();
+    copied[idx] = normalizeMonthString(copied[idx]);
+    return copied;
+  });
+}
+
+function uniqueFromRows(colName) {
+  const idx = ci(colName);
+  if (idx < 0) return [];
+  return [...new Set(rawData.rows.map(r => String(r[idx] || '').trim()).filter(Boolean))];
+}
+
+function countBy(rows, colIdx) {
+  const m = {};
+  rows.forEach(r => {
+    const raw = colIdx >= 0 ? r[colIdx] : '';
+    const v = String(raw || '').trim() || 'その他';
+    m[v] = (m[v] || 0) + 1;
+  });
+  return Object.entries(m).sort((a, b) => b[1] - a[1]);
+}
+
+function pct(num, den) {
+  if (!den) return 0;
+  return (num / den * 100);
+}
+
+function isCommunicationRegistered(v) {
+  return String(v || '').includes('登録済み');
+}
+
+function getNextApplicationStatus_(v) {
+  const text = String(v || '').trim();
+  const confirmed = text.includes('登録済み');
+  const pendingIntent = text.includes('今回登録する');
+  const notApplying = text.includes('登録しない');
+  return {
+    confirmed,
+    pendingIntent,
+    notApplying,
+    intentIncluded: confirmed || pendingIntent
+  };
+}
+
+function isNextApplicationConfirmed_(v) {
+  return getNextApplicationStatus_(v).confirmed;
+}
+
+function isNextApplicationPendingIntent_(v) {
+  return getNextApplicationStatus_(v).pendingIntent;
+}
+
+function isNextApplicationIntentIncluded_(v) {
+  return getNextApplicationStatus_(v).intentIncluded;
+}
+
+function isNextApplicationNotApplying_(v) {
+  return getNextApplicationStatus_(v).notApplying;
+}
+
+function isNextApplicationUnconfirmed_(v) {
+  return !isNextApplicationConfirmed_(v);
+}
+
+function safeNumber(v) {
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
+function average(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function escH(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function valueAt_(row, colName) {
+  const idx = ci(colName);
+  return idx >= 0 ? row[idx] : '';
+}
+
+function textValue_(row, colName) {
+  return String(valueAt_(row, colName) || '').trim();
+}
+
+function redactPersonalInfo_(text) {
+  let s = String(text || '');
+  s = s.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[メール非表示]');
+  s = s.replace(/(?:\+81[-\s]?)?0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}/g, '[電話番号非表示]');
+  const nameIdx = ci('氏名');
+  if (nameIdx >= 0) {
+    const names = [...new Set(rawData.rows.map(r => String(r[nameIdx] || '').trim()).filter(n => n.length >= 2))];
+    names.forEach(name => {
+      const compact = name.replace(/[ 　]/g, '');
+      [name, compact].filter(n => n.length >= 2).forEach(n => {
+        s = s.split(n).join('[氏名非表示]');
+      });
+    });
+  }
+  return s;
+}
+
+function escPublicText_(text) {
+  return escH(redactPersonalInfo_(text));
+}
+
+function formatRate_(value) {
+  return `${Number(value || 0).toFixed(1)}%`;
+}
+
+function metricStatusClass_(value, target, higherIsBetter) {
+  if (value === null || value === undefined || isNaN(value)) return 'cmp-neutral';
+  if (higherIsBetter === false) return value <= target ? 'cmp-up' : 'cmp-down';
+  return value >= target ? 'cmp-up' : 'cmp-down';
+}
+
+function renderMetricRow_(label, current, target, unit, sub, higherIsBetter) {
+  const cls = metricStatusClass_(Number(current), Number(target), higherIsBetter !== false);
+  const diff = Number(current) - Number(target);
+  const diffText = unit === '%' ? `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}pt` : `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}`;
+  return `<div class="ops-metric">
+    <div><div class="ops-metric-main">${escH(label)}</div><div class="ops-metric-sub">${escH(sub || '')}</div></div>
+    <div class="ops-metric-value"><span class="${cls}">${unit === '%' ? formatRate_(current) : escH(current)}</span><div class="ops-metric-sub">目標 ${unit === '%' ? formatRate_(target) : escH(target)} / ${escH(diffText)}</div></div>
+  </div>`;
+}
+
+function topCategoriesForRows_(rows, colName, limit) {
+  const idx = ci(colName);
+  if (idx < 0) return [];
+  return countBy(rows, idx).slice(0, limit || 3).map(([label, count]) => `${label}(${count})`);
+}
+
+function firstNonEmptyText_(row, cols) {
+  for (const col of cols) {
+    const text = textValue_(row, col);
+    if (text) return text;
+  }
+  return '';
+}
+
+function eventLabelForRow_(row) {
+  const eventCols = ['開催イベント', '勉強会名', 'イベント名', 'セミナー名'];
+  for (const col of eventCols) {
+    const v = textValue_(row, col);
+    if (v) return v;
+  }
+  return normalizeMonthString(valueAt_(row, '開催月')) || '未回答';
+}
+
+function summarizeMonthlyTexts_(rows) {
+  const texts = rows.map(r => firstNonEmptyText_(r, ['感想・メッセージ', '深掘りリクエスト', '参加目的', '実行アクション'])).filter(Boolean);
+  if (!texts.length) return '本文なし';
+
+  const cats = topCategoriesForRows_(rows, '参加目的カテゴリ_主', 2).map(v => v.replace(/\(\d+\)$/, ''));
+  const words = extractTopWords_(texts, 3).map(([word]) => word);
+  const actionCount = rows.filter(r => textValue_(r, '実行アクション')).length;
+  const deepCount = rows.filter(r => textValue_(r, '深掘りリクエスト')).length;
+  const parts = [];
+  if (cats.length) parts.push(`関心: ${cats.join(' / ')}`);
+  if (words.length) parts.push(`頻出語: ${words.join(' / ')}`);
+  if (actionCount) parts.push(`実行宣言 ${actionCount}件`);
+  if (deepCount) parts.push(`深掘り要望 ${deepCount}件`);
+  return parts.join('。') || '本文あり';
+}
+
+function rowParticipantKey_(row, idx) {
+  const publicIdIdx = ci('参加者ID');
+  if (publicIdIdx >= 0 && row[publicIdIdx]) return String(row[publicIdIdx]).trim();
+  const keyIdx = ci('参加者キー');
+  if (keyIdx >= 0 && row[keyIdx]) return String(row[keyIdx]).trim();
+  const email = String(row[ci('メールアドレス')] || '').trim().toLowerCase();
+  if (email) return `email:${email}`;
+  const name = String(row[ci('氏名')] || '').replace(/[ 　]/g, '').trim();
+  const phone = String(row[ci('電話番号')] || '').replace(/[^\d]/g, '').trim();
+  if (name || phone) return `profile:${name || 'unknown'}|${phone || 'unknown'}`;
+  return `anonymous:${idx}`;
+}
+
+function toRepeatBand_(n) {
+  if (n >= 4) return '4回以上';
+  if (n === 3) return '3回';
+  if (n === 2) return '2回';
+  return '1回';
+}
+
+function buildRepeatBandMapFromAllRows_() {
+  repeatBandByKey = {};
+  const bandIdx = ci('リピーター頻度帯');
+  if (bandIdx >= 0) {
+    rawData.rows.forEach((r, idx) => {
+      const key = rowParticipantKey_(r, idx);
+      const band = String(r[bandIdx] || '').trim();
+      if (REPEAT_BANDS.includes(band)) repeatBandByKey[key] = band;
+    });
+    return;
+  }
+  const counts = {};
+  rawData.rows.forEach((r, idx) => {
+    const key = rowParticipantKey_(r, idx);
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  Object.entries(counts).forEach(([key, c]) => {
+    repeatBandByKey[key] = toRepeatBand_(c);
+  });
+}
+
+function getRowRepeatBand_(row, idx) {
+  const bandIdx = ci('リピーター頻度帯');
+  if (bandIdx >= 0) {
+    const band = String(row[bandIdx] || '').trim();
+    if (REPEAT_BANDS.includes(band)) return band;
+  }
+  const key = rowParticipantKey_(row, idx);
+  return repeatBandByKey[key] || '1回';
+}
+
+function getCurrentFilterState() {
+  return {
+    month: document.getElementById('fMonth').value || '全て',
+    job: document.getElementById('fJob').value || '全て',
+    channel: document.getElementById('fChannel').value || '全て',
+    studyStatus: document.getElementById('fStudyStatus').value || '全て',
+    repeater: document.getElementById('fRepeater').value || '全員'
+  };
+}
+
+// ===== Navigation =====
+const tabTitles = ['概要サマリー','参加者分析','声と関心','教訓 & アクション','指定月 特別分析'];
+function switchTab(idx) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.remove('active');
+    n.removeAttribute('aria-current');
+  });
+  document.getElementById('tab' + idx).classList.add('active');
+  const activeNav = document.querySelectorAll('.nav-item')[idx];
+  activeNav.classList.add('active');
+  activeNav.setAttribute('aria-current', 'page');
+  document.getElementById('pageTitle').textContent = tabTitles[idx];
+  const metaTitle = document.getElementById('pageTitleMeta');
+  if (metaTitle) metaTitle.textContent = tabTitles[idx];
+  document.getElementById('globalFilter').style.display = idx === 4 ? 'none' : '';
+}
+
+// ===== Filters =====
+function mergeFallbackFilters(serverFilters) {
+  const base = serverFilters || {};
+  const normalizedMonths = (base.months || []).map(normalizeMonthString).filter(Boolean);
+  const monthSet = [...new Set((normalizedMonths.length ? normalizedMonths : uniqueFromRows('開催月')))];
+  const studyStatus = (base.studyStatus && base.studyStatus.length) ? base.studyStatus : uniqueFromRows('頂点への道_受講状況');
+  if (!studyStatus.includes('未受講以外')) studyStatus.push('未受講以外');
+  return {
+    months: monthSet,
+    jobs: (base.jobs && base.jobs.length) ? base.jobs : uniqueFromRows('職業'),
+    channels: (base.channels && base.channels.length) ? base.channels : uniqueFromRows('認知経路'),
+    studyStatus: studyStatus
+  };
+}
+
+function localColumnIndex_(full, name) {
+  return (full.headers || []).indexOf(name);
+}
+
+function localValue_(full, row, name) {
+  const idx = localColumnIndex_(full, name);
+  return idx >= 0 ? row[idx] : '';
+}
+
+function localUnique_(full, name) {
+  const idx = localColumnIndex_(full, name);
+  if (idx < 0) return [];
+  return [...new Set((full.rows || []).map(r => String(r[idx] || '').trim()).filter(Boolean))].sort();
+}
+
+function buildLocalMonths_(full) {
+  return [...new Set(localUnique_(full, '開催月').map(normalizeMonthString).filter(Boolean))]
+    .sort((a, b) => monthSortKey(a) - monthSortKey(b));
+}
+
+function buildLocalFilterOptions_(full) {
+  const studyStatus = localUnique_(full, '頂点への道_受講状況');
+  if (!studyStatus.includes('未受講以外')) studyStatus.push('未受講以外');
+  return {
+    months: buildLocalMonths_(full),
+    jobs: localUnique_(full, '職業'),
+    channels: localUnique_(full, '認知経路'),
+    purposes: localUnique_(full, '参加目的カテゴリ_主'),
+    studyStatus: studyStatus,
+    repeater: ['全員', 'リピーター', '初参加'],
+    satisfaction: ['全て', '5', '4', '3', '2', '1']
+  };
+}
+
+function buildLocalDataHealth_(full) {
+  const rows = full.rows || [];
+  const countNonEmpty = name => rows.filter(r => String(localValue_(full, r, name) || '').trim()).length;
+  return {
+    ok: rows.length > 0,
+    message: rows.length ? 'ローカルプレビュー用データを読み込みました。個人情報列は空欄化しています。' : 'ローカルプレビュー用データがありません。',
+    counts: {
+      totalRows: rows.length,
+      months: countNonEmpty('開催月'),
+      jobs: countNonEmpty('職業'),
+      channels: countNonEmpty('認知経路'),
+      studyStatus: countNonEmpty('頂点への道_受講状況')
+    }
+  };
+}
+
+function populateFilters(opts) {
+  opts = opts || {};
+  fillSelect('fMonth', (opts.months || []).sort((a, b) => monthSortKey(a) - monthSortKey(b)));
+  fillSelect('fJob', opts.jobs || []);
+  fillSelect('fChannel', opts.channels || []);
+  fillSelect('fStudyStatus', opts.studyStatus || []);
+}
+
+function fillSelect(id, values) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  if (!Array.isArray(values)) values = [];
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = v;
+    sel.appendChild(o);
+  });
+}
+
+function resetFilters() {
+  ['fMonth','fJob','fChannel','fStudyStatus','fRepeater'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  purposeAiSummary = '';
+  commentAiSummary = '';
+  applyFilters();
+}
+
+function renderHealthNotice(health) {
+  const el = document.getElementById('healthNotice');
+  if (!el) return;
+  if (health.ok) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  const counts = health.counts || {};
+  el.innerHTML = `${escH(health.message || 'データ健全性に問題があります。')}<br>` +
+    `件数: 開催月=${escH(counts.months || 0)}, 職業=${escH(counts.jobs || 0)}, 認知経路=${escH(counts.channels || 0)}, 受講状況=${escH(counts.studyStatus || 0)}`;
+}
+
+function applyFilters() {
+  const fm = document.getElementById('fMonth').value;
+  const fj = document.getElementById('fJob').value;
+  const fc = document.getElementById('fChannel').value;
+  const fs = document.getElementById('fStudyStatus').value;
+  const fr = document.getElementById('fRepeater').value;
+
+  filteredRows = rawData.rows.filter((r, idx) => {
+    const month = normalizeMonthString(r[ci('開催月')]);
+    const job = String(r[ci('職業')] || '').trim();
+    const channel = String(r[ci('認知経路')] || '').trim();
+    const study = String(r[ci('頂点への道_受講状況')] || '').trim();
+    const repeaterFlag = String(r[ci('リピーターフラグ')] || '').trim();
+    const band = getRowRepeatBand_(r, idx);
+
+    if (fm && month !== fm) return false;
+    if (fj && job !== fj) return false;
+    if (fc && channel !== fc) return false;
+    if (fs === '未受講以外' && study.includes('未受講')) return false;
+    if (fs && fs !== '未受講以外' && study !== fs) return false;
+    if (fr === 'リピーター' && repeaterFlag !== 'リピーター') return false;
+    if (fr === '初参加' && band !== '1回') return false;
+    return true;
+  });
+
+  renderAll();
+}
+
+// ===== Render =====
+function renderAll() {
+  renderKPI();
+  renderOpsValidationBoard();
+  renderDataReliabilityBoard();
+  renderOverviewCharts();
+  renderFunnelAndIntent();
+  renderAlerts();
+  renderDecisionCards();
+  renderParticipantCharts();
+  renderRepeaterFrequencyAnalysis();
+  renderSegmentTable();
+  renderVocSplit();
+  renderMonthlyTextSummary();
+  renderApplicationVoiceSamples();
+  renderEventVoiceTable();
+  renderActionCharts();
+  renderDriverAnalysis();
+  renderInitiativesTable();
+  renderFollowUpList();
+}
+
+// ===== KPI =====
+function renderKPI() {
+  const rows = filteredRows;
+  const sats = rows.map(r => safeNumber(r[ci('目的達成度')])).filter(v => v !== null);
+  const avgSat = average(sats);
+  const highSatThreshold = Number(dashboardSetting_('highSatisfactionAchievementScore', 4));
+  const lineCount = rows.filter(r => isCommunicationRegistered(r[ci('LINE登録状況')])).length;
+  const confirmedCount = rows.filter(r => isNextApplicationConfirmed_(r[ci('次回申込状況')])).length;
+  const pendingIntentCount = rows.filter(r => isNextApplicationPendingIntent_(r[ci('次回申込状況')])).length;
+  const intentIncludedCount = rows.filter(r => isNextApplicationIntentIncluded_(r[ci('次回申込状況')])).length;
+  const followUpCount = rows.filter(r => {
+    const sat = safeNumber(r[ci('目的達成度')]);
+    return sat !== null && sat >= highSatThreshold && isNextApplicationUnconfirmed_(r[ci('次回申込状況')]);
+  }).length;
+
+  document.getElementById('kpiGrid').innerHTML = [
+    kpiCard('回答数', rows.length, '件'),
+    kpiCard('要フォロー人数', followUpCount, `達成度${highSatThreshold}以上・確定申込なし`, true),
+    kpiCard('確定申込率', rows.length ? pct(confirmedCount, rows.length).toFixed(1) : '-', '%'),
+    kpiCard('意向込み申込率', rows.length ? pct(intentIncludedCount, rows.length).toFixed(1) : '-', '%'),
+    kpiCard('未完了意向者数', pendingIntentCount, '名'),
+    kpiCard('平均達成度', avgSat ? avgSat.toFixed(2) : '-', '/ 5.00'),
+    kpiCard('LINE登録率', rows.length ? pct(lineCount, rows.length).toFixed(1) : '-', '%'),
+  ].join('');
+}
+
+function kpiCard(label, value, sub, highlight) {
+  return `<div class="kpi-card${highlight ? ' highlight' : ''}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub || ''}</div></div>`;
+}
+
+// ===== Overview =====
+function renderOpsValidationBoard() {
+  const el = document.getElementById('opsValidationBoard');
+  if (!el) return;
+  const rows = filteredRows;
+  const m = computeMetrics_(rows);
+  const responseTarget = Number(dashboardSetting_('minimumResponseCountTarget', dashboardSetting_('smallSegmentThreshold', 5)));
+  const avgTarget = Number(dashboardSetting_('averageAchievementLowerLimit', 4.4));
+  const lineTarget = Number(dashboardSetting_('lineRegistrationRateTarget', 0.85)) * 100;
+  const confirmedTarget = Number(dashboardSetting_('nextApplicationRateTarget', 0.35)) * 100;
+  const intentTarget = Number(dashboardSetting_('intentIncludedApplicationRateTarget', 0.70)) * 100;
+
+  el.innerHTML = [
+    renderMetricRow_('回答数', rows.length, responseTarget, '件', '現在のフィルタ対象', true),
+    renderMetricRow_('平均達成度', m.avgSat ? m.avgSat.toFixed(2) : 0, avgTarget.toFixed(2), '点', '目的達成度の平均', true),
+    renderMetricRow_('LINE登録率', m.lineRate, lineTarget, '%', '回答者に占める登録済み比率', true),
+    renderMetricRow_('確定申込率', m.confirmedRate, confirmedTarget, '%', '次回申込状況=登録済み', true),
+    renderMetricRow_('意向込み申込率', m.intentIncludedRate, intentTarget, '%', '登録済み + 今回登録する', true)
+  ].join('');
+}
+
+function renderDataReliabilityBoard() {
+  const el = document.getElementById('dataReliabilityBoard');
+  if (!el) return;
+  const rows = filteredRows;
+  const textCols = ['参加目的', '感想・メッセージ', '深掘りリクエスト', '実行アクション'];
+  const textFilled = rows.filter(r => textCols.some(col => textValue_(r, col))).length;
+  const textRate = rows.length ? pct(textFilled, rows.length) : 0;
+  const smallThreshold = Number(dashboardSetting_('smallSegmentThreshold', 5));
+  const segmentRows = computeSegments_(rows);
+  const smallSegments = segmentRows.filter(s => s.count > 0 && s.count < smallThreshold).length;
+  const configItems = (dashboardConfig && Array.isArray(dashboardConfig.items)) ? dashboardConfig.items : [];
+  const missingConfig = configItems.filter(item => item && item.missing).length;
+  const sheetFound = dashboardConfig && dashboardConfig.sheetFound !== false;
+  const configText = configItems.length
+    ? `${sheetFound ? '設定シート読込済み' : '設定シート未検出'} / 既定値利用 ${missingConfig}件`
+    : '設定項目なし';
+  const revision = dashboardMeta.revision || 'unknown';
+
+  el.innerHTML = [
+    `<div class="ops-metric"><div><div class="ops-metric-main">回答数</div><div class="ops-metric-sub">分析対象の母数</div></div><div class="ops-metric-value">${rows.length}件</div></div>`,
+    `<div class="ops-metric"><div><div class="ops-metric-main">テキスト回答充足</div><div class="ops-metric-sub">参加目的/感想/深掘り/実行アクションのいずれか記入</div></div><div class="ops-metric-value">${formatRate_(textRate)}<div class="ops-metric-sub">${textFilled}/${rows.length}件</div></div></div>`,
+    `<div class="ops-metric"><div><div class="ops-metric-main">少数セグメント注意</div><div class="ops-metric-sub">${smallThreshold}件未満の主要セグメント数</div></div><div class="ops-metric-value ${smallSegments ? 'cmp-down' : 'cmp-up'}">${smallSegments}件</div></div>`,
+    `<div class="ops-metric"><div><div class="ops-metric-main">設定値の読み込み</div><div class="ops-metric-sub">${escH(configText)}</div></div><div class="ops-metric-value">${escH(revision)}</div></div>`
+  ].join('');
+}
+
+function renderOverviewCharts() {
+  const monthCounts = countBy(filteredRows, ci('開催月'))
+    .map(([m, c]) => [normalizeMonthString(m), c])
+    .sort((a, b) => monthSortKey(a[0]) - monthSortKey(b[0]));
+  renderChart('chartMonthlyCount', 'bar', monthCounts.map(m => m[0]), monthCounts.map(m => m[1]), '回答数', COLORS[0]);
+
+  const monthGroups = {};
+  filteredRows.forEach(r => {
+    const m = normalizeMonthString(r[ci('開催月')]);
+    const s = safeNumber(r[ci('目的達成度')]);
+    if (!m || s === null) return;
+    if (!monthGroups[m]) monthGroups[m] = [];
+    monthGroups[m].push(s);
+  });
+  const mLabels = Object.keys(monthGroups).sort((a, b) => monthSortKey(a) - monthSortKey(b));
+  const mAvgs = mLabels.map(m => average(monthGroups[m]).toFixed(2));
+  renderChart('chartMonthlySat', 'line', mLabels, mAvgs, '平均達成度', COLORS[0]);
+
+  const sats = filteredRows.map(r => safeNumber(r[ci('目的達成度')])).filter(v => v !== null);
+  const satCounts = [5,4,3,2,1].map(s => sats.filter(v => v === s).length);
+  renderChart('chartSatDist', 'doughnut', ['5','4','3','2','1'], satCounts, '達成度',
+    [COLORS[1],COLORS[0],COLORS[2],COLORS[3],COLORS[5]]);
+
+  const total = filteredRows.length || 1;
+  const lineR = pct(filteredRows.filter(r => isCommunicationRegistered(r[ci('LINE登録状況')])).length, total).toFixed(1);
+  const fbR = pct(filteredRows.filter(r => isCommunicationRegistered(r[ci('Facebook登録状況')])).length, total).toFixed(1);
+  const confirmedR = pct(filteredRows.filter(r => isNextApplicationConfirmed_(r[ci('次回申込状況')])).length, total).toFixed(1);
+  const intentIncludedR = pct(filteredRows.filter(r => isNextApplicationIntentIncluded_(r[ci('次回申込状況')])).length, total).toFixed(1);
+  renderChart('chartRegRates', 'bar', ['LINE登録','Facebook登録','確定申込','意向込み申込'], [lineR, fbR, confirmedR, intentIncludedR], '登録率(%)',
+    [COLORS[1], COLORS[0], COLORS[2], COLORS[4]]);
+}
+
+function renderFunnelAndIntent() {
+  const stages = computeFunnel_(filteredRows);
+  renderChart('chartFunnel', 'bar',
+    ['回答', '満足度4以上', '満足度4以上+LINE登録', '確定申込', '意向込み申込'],
+    [stages.total, stages.sat4, stages.sat4Line, stages.sat4LineConfirmed, stages.sat4LineIntentIncluded],
+    '人数',
+    [COLORS[0], COLORS[1], COLORS[2], COLORS[3], COLORS[4]]
+  );
+
+  const intent = computeIntentDistribution_(filteredRows);
+  renderChart('chartIntent', 'doughnut', ['High', 'Medium', 'Low'], [intent.high, intent.medium, intent.low],
+    '件数', ['#34A853', '#FBBC04', '#EA4335']);
+}
+
+function computeFunnel_(rows) {
+  const sat4 = rows.filter(r => (safeNumber(r[ci('目的達成度')]) || 0) >= 4);
+  const sat4Line = sat4.filter(r => isCommunicationRegistered(r[ci('LINE登録状況')]));
+  const sat4LineConfirmed = sat4Line.filter(r => isNextApplicationConfirmed_(r[ci('次回申込状況')]));
+  const sat4LineIntentIncluded = sat4Line.filter(r => isNextApplicationIntentIncluded_(r[ci('次回申込状況')]));
+  return {
+    total: rows.length,
+    sat4: sat4.length,
+    sat4Line: sat4Line.length,
+    sat4LineConfirmed: sat4LineConfirmed.length,
+    sat4LineIntentIncluded: sat4LineIntentIncluded.length
+  };
+}
+
+function scoreIntent_(row, idx) {
+  let score = 0;
+  const sat = safeNumber(row[ci('目的達成度')]) || 0;
+  if (sat >= 5) score += 35;
+  else if (sat === 4) score += 25;
+  else if (sat === 3) score += 15;
+  else if (sat === 2) score += 8;
+  else if (sat === 1) score += 3;
+
+  if (isCommunicationRegistered(row[ci('LINE登録状況')])) score += 20;
+  if (isNextApplicationConfirmed_(row[ci('次回申込状況')])) score += 30;
+  else if (isNextApplicationPendingIntent_(row[ci('次回申込状況')])) score += 20;
+  if (getRowRepeatBand_(row, idx) !== '1回') score += 10;
+
+  const study = String(row[ci('頂点への道_受講状況')] || '');
+  if (study.includes('受講') || study.includes('会員')) score += 5;
+
+  return Math.min(100, score);
+}
+
+function intentLabel_(score) {
+  if (score >= 70) return 'High';
+  if (score >= 40) return 'Medium';
+  return 'Low';
+}
+
+function computeIntentDistribution_(rows) {
+  const dist = { high: 0, medium: 0, low: 0 };
+  rows.forEach((r, idx) => {
+    const label = intentLabel_(scoreIntent_(r, idx));
+    if (label === 'High') dist.high++;
+    else if (label === 'Medium') dist.medium++;
+    else dist.low++;
+  });
+  return dist;
+}
+
+// ===== Alerts & Decision =====
+function computeMetrics_(rows) {
+  const sats = rows.map(r => safeNumber(r[ci('目的達成度')])).filter(v => v !== null);
+  const confirmed = rows.filter(r => isNextApplicationConfirmed_(r[ci('次回申込状況')])).length;
+  const pendingIntent = rows.filter(r => isNextApplicationPendingIntent_(r[ci('次回申込状況')])).length;
+  const intentIncluded = rows.filter(r => isNextApplicationIntentIncluded_(r[ci('次回申込状況')])).length;
+  const line = rows.filter(r => isCommunicationRegistered(r[ci('LINE登録状況')])).length;
+  const unTaken = rows.filter(r => String(r[ci('頂点への道_受講状況')] || '').includes('未受講')).length;
+  return {
+    count: rows.length,
+    avgSat: average(sats),
+    confirmedRate: rows.length ? pct(confirmed, rows.length) : 0,
+    pendingIntentCount: pendingIntent,
+    intentIncludedRate: rows.length ? pct(intentIncluded, rows.length) : 0,
+    lineRate: rows.length ? pct(line, rows.length) : 0,
+    unTakenRate: rows.length ? pct(unTaken, rows.length) : 0
+  };
+}
+
+function buildAlerts_(base, current) {
+  const alerts = [];
+  const minCount = Number(dashboardSetting_('smallSegmentThreshold', 5));
+  const warningPt = Number(dashboardSetting_('monthOverMonthWarningPt', 5));
+  const avgLowerLimit = Number(dashboardSetting_('averageAchievementLowerLimit', 4.4));
+  const confirmedRateTarget = Number(dashboardSetting_('nextApplicationRateTarget', 0.35)) * 100;
+  const lineRateTarget = Number(dashboardSetting_('lineRegistrationRateTarget', 0.85)) * 100;
+
+  if (current.count < minCount) {
+    alerts.push({ level: 'warn', text: `対象件数が${minCount}件未満です。指標の変動が大きく見える可能性があります。` });
+  }
+  if (current.confirmedRate < confirmedRateTarget) {
+    alerts.push({ level: 'warn', text: `確定申込率が目標 ${confirmedRateTarget.toFixed(1)}% を下回っています。` });
+  }
+  if (current.lineRate < lineRateTarget) {
+    alerts.push({ level: 'warn', text: `LINE登録率が目標 ${lineRateTarget.toFixed(1)}% を下回っています。` });
+  }
+  if (current.avgSat > 0 && current.avgSat < avgLowerLimit) {
+    alerts.push({ level: 'danger', text: `平均達成度が下限 ${avgLowerLimit.toFixed(2)} を下回っています。` });
+  }
+  if (current.confirmedRate < base.confirmedRate - warningPt) {
+    alerts.push({ level: 'danger', text: `確定申込率が全体比で ${Math.abs(current.confirmedRate - base.confirmedRate).toFixed(1)}pt 低下しています。` });
+  }
+  if (current.avgSat < base.avgSat - 0.4) {
+    alerts.push({ level: 'danger', text: `平均達成度が全体比で ${(base.avgSat - current.avgSat).toFixed(2)} 低下しています。` });
+  }
+  if (current.unTakenRate > base.unTakenRate + warningPt) {
+    alerts.push({ level: 'warn', text: `未受講比率が全体比で ${(current.unTakenRate - base.unTakenRate).toFixed(1)}pt 上昇しています。` });
+  }
+  if (current.lineRate < base.lineRate - warningPt) {
+    alerts.push({ level: 'warn', text: `LINE登録率が全体比で ${(base.lineRate - current.lineRate).toFixed(1)}pt 低下しています。` });
+  }
+  return alerts;
+}
+
+function renderAlerts() {
+  const container = document.getElementById('alertList');
+  if (!container) return;
+  const base = computeMetrics_(rawData.rows);
+  const current = computeMetrics_(filteredRows);
+  const alerts = buildAlerts_(base, current);
+
+  if (!alerts.length) {
+    container.innerHTML = '<p style="color:#137333">大きな警告はありません。主要KPIは基準範囲内です。</p>';
+    return;
+  }
+  const html = '<ul style="padding-left:20px">' + alerts.map(a => {
+    const color = a.level === 'danger' ? '#C5221F' : '#E37400';
+    return `<li style="color:${color}">${escH(a.text)}</li>`;
+  }).join('') + '</ul>';
+  container.innerHTML = html;
+}
+
+function renderDecisionCards() {
+  const container = document.getElementById('decisionCards');
+  if (!container) return;
+  if (!filteredRows.length) {
+    container.innerHTML = '<p style="color:var(--text-secondary)">対象データがありません。</p>';
+    return;
+  }
+
+  const base = computeMetrics_(rawData.rows);
+  const current = computeMetrics_(filteredRows);
+  const alerts = buildAlerts_(base, current);
+  const segments = computeSegments_(filteredRows).filter(s => s.count >= 3).slice(0, 2);
+  const drivers = computeDrivers_(filteredRows).slice(0, 3);
+  const topNegative = drivers.filter(d => d.lift < 0).slice(0, 1)[0];
+
+  const cards = [];
+  if (alerts.length) {
+    cards.push('警告指標の是正: 次回案内文の改善・フォロー優先順位の見直しを当月内に実行。');
+  } else {
+    cards.push('維持施策: 現行オペレーションを維持しつつ、確定申込率を+3pt目標で改善テストを実施。');
+  }
+  if (segments.length) {
+    cards.push(`重点セグメント: 「${segments[0].label}」が有望です（件数 ${segments[0].count} / 確定申込率 ${segments[0].confirmedRate.toFixed(1)}% / 意向込み ${segments[0].intentIncludedRate.toFixed(1)}%）。`);
+  }
+  if (topNegative) {
+    cards.push(`改善優先ドライバー: 「${topNegative.feature}:${topNegative.value}」は全体比 ${topNegative.lift.toFixed(1)}pt 低く、対策優先度が高いです。`);
+  }
+
+  container.innerHTML = '<ol style="padding-left:20px">' + cards.map(c => `<li>${escH(c)}</li>`).join('') + '</ol>';
+}
+
+// ===== Participant Analysis =====
+function renderParticipantCharts() {
+  const jobD = countBy(filteredRows, ci('職業'));
+  renderChart('chartJob', 'pie', jobD.map(d => d[0]), jobD.map(d => d[1]), '人数', COLORS);
+
+  const chD = countBy(filteredRows, ci('認知経路'));
+  renderChart('chartChannel', 'bar', chD.map(d => d[0]), chD.map(d => d[1]), '人数', COLORS[0]);
+
+  const pD = countBy(filteredRows, ci('参加目的カテゴリ_主'));
+  renderChart('chartPurpose', 'bar', pD.map(d => d[0]), pD.map(d => d[1]), '人数', COLORS[4]);
+
+  const repCount = filteredRows.filter((r, idx) => getRowRepeatBand_(r, idx) !== '1回').length;
+  const newCount = filteredRows.length - repCount;
+  renderChart('chartRepeater', 'doughnut', ['リピーター', '初参加'], [repCount, newCount], '人数', [COLORS[0], COLORS[5]]);
+
+  const studyDist = countBy(filteredRows, ci('頂点への道_受講状況'));
+  renderChart('chartStudyStatus', 'doughnut', studyDist.map(d => d[0]), studyDist.map(d => d[1]), '人数', COLORS);
+}
+
+function renderRepeaterFrequencyAnalysis() {
+  const bandStats = {};
+  REPEAT_BANDS.forEach(b => {
+    bandStats[b] = { count: 0, sat: [], confirmed: 0, intentIncluded: 0 };
+  });
+  filteredRows.forEach((r, idx) => {
+    const band = getRowRepeatBand_(r, idx);
+    if (!bandStats[band]) bandStats[band] = { count: 0, sat: [], confirmed: 0, intentIncluded: 0 };
+    bandStats[band].count++;
+    const sat = safeNumber(r[ci('目的達成度')]);
+    if (sat !== null) bandStats[band].sat.push(sat);
+    if (isNextApplicationConfirmed_(r[ci('次回申込状況')])) bandStats[band].confirmed++;
+    if (isNextApplicationIntentIncluded_(r[ci('次回申込状況')])) bandStats[band].intentIncluded++;
+  });
+
+  renderChart('chartRepeatFreq', 'bar', REPEAT_BANDS, REPEAT_BANDS.map(b => bandStats[b].count), '人数', COLORS[6]);
+
+  const table = document.getElementById('tableRepeatFreq');
+  if (!table) return;
+  let html = '<thead><tr><th>頻度帯</th><th>人数</th><th>平均達成度</th><th>確定申込率</th><th>意向込み申込率</th></tr></thead><tbody>';
+  REPEAT_BANDS.forEach(b => {
+    const s = bandStats[b];
+    const avgSat = s.sat.length ? average(s.sat).toFixed(2) : '-';
+    const confirmedRate = s.count ? pct(s.confirmed, s.count).toFixed(1) + '%' : '-';
+    const intentIncludedRate = s.count ? pct(s.intentIncluded, s.count).toFixed(1) + '%' : '-';
+    html += `<tr><td>${b}</td><td>${s.count}</td><td>${avgSat}</td><td>${confirmedRate}</td><td>${intentIncludedRate}</td></tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function computeSegments_(rows) {
+  const segments = {};
+  rows.forEach(r => {
+    const label = [
+      String(r[ci('職業')] || '未回答').trim() || '未回答',
+      String(r[ci('頂点への道_受講状況')] || '未回答').trim() || '未回答',
+      String(r[ci('認知経路')] || '未回答').trim() || '未回答',
+      String(r[ci('参加目的カテゴリ_主')] || '未回答').trim() || '未回答'
+    ].join(' / ');
+
+    if (!segments[label]) segments[label] = { count: 0, confirmed: 0, intentIncluded: 0, sats: [] };
+    segments[label].count++;
+    if (isNextApplicationConfirmed_(r[ci('次回申込状況')])) segments[label].confirmed++;
+    if (isNextApplicationIntentIncluded_(r[ci('次回申込状況')])) segments[label].intentIncluded++;
+    const sat = safeNumber(r[ci('目的達成度')]);
+    if (sat !== null) segments[label].sats.push(sat);
+  });
+
+  return Object.entries(segments).map(([label, s]) => ({
+    label,
+    count: s.count,
+    confirmedRate: s.count ? pct(s.confirmed, s.count) : 0,
+    intentIncludedRate: s.count ? pct(s.intentIncluded, s.count) : 0,
+    avgSat: s.sats.length ? average(s.sats) : 0
+  })).sort((a, b) => b.count - a.count);
+}
+
+function renderSegmentTable() {
+  const table = document.getElementById('tableSegments');
+  if (!table) return;
+  const rows = computeSegments_(filteredRows).slice(0, 20);
+  let html = '<thead><tr><th>セグメント</th><th>件数</th><th>確定申込率</th><th>意向込み申込率</th><th>平均達成度</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    html += `<tr><td>${escH(r.label)}</td><td>${r.count}</td><td>${r.confirmedRate.toFixed(1)}%</td><td>${r.intentIncludedRate.toFixed(1)}%</td><td>${r.avgSat.toFixed(2)}</td></tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ===== VOC Split =====
+function extractTopWords_(texts, limit) {
+  const allText = texts.join(' ');
+  const wordCounts = {};
+  const patterns = [
+    /[ァ-ヶー]{2,}/g,
+    /[a-zA-Z]{2,}/g,
+    /AI|IT|DX|ICT/gi,
+    /[\u4e00-\u9fff]{2,6}/g
+  ];
+  const stops = new Set(['する','いる','なる','ある','できる','思う','こと','もの','ため','よう','それ','これ','あれ','どれ','この','その','あの','など','から','まで','について','として','です','ます','した','して','the','and','for','that','this','with','from','have','been']);
+
+  patterns.forEach(pat => {
+    const matches = allText.match(pat) || [];
+    matches.forEach(w => {
+      const lw = w.toLowerCase();
+      if (stops.has(lw) || lw.length < 2) return;
+      wordCounts[w] = (wordCounts[w] || 0) + 1;
+    });
+  });
+
+  return Object.entries(wordCounts).sort((a, b) => b[1] - a[1]).slice(0, limit || 20);
+}
+
+function renderWordCloud_(containerId, words) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!words.length) {
+    el.innerHTML = '<span style="color:var(--text-secondary)">対象テキストがありません</span>';
+    return;
+  }
+  const max = Math.max(...words.map(w => w[1]));
+  el.innerHTML = words.map(([word, count]) => {
+    const size = Math.max(12, Math.min(28, 12 + (count / max) * 16));
+    return `<span class="word-tag" style="font-size:${size}px">${escH(word)} (${count})</span>`;
+  }).join('');
+}
+
+function summarizePurposeVoc_(texts) {
+  const purposeTop = countBy(filteredRows, ci('参加目的カテゴリ_主')).slice(0, 3);
+  const words = extractTopWords_(texts, 5).map(([w, c]) => `${w}(${c})`);
+  const base = [
+    `回答件数: ${texts.length}件`,
+    `主要カテゴリ: ${purposeTop.map(x => `${x[0]}(${x[1]})`).join(' / ') || 'データなし'}`,
+    `主要ワード: ${words.join(' / ') || 'データなし'}`
+  ];
+  return base;
+}
+
+function categorizeComment_(text) {
+  const t = String(text || '');
+  if (/もっと|深掘り|改善|難し|わかりにく|ほしい/.test(t)) return '改善要望';
+  if (/実行|導入|使って|試し|やってみ/.test(t)) return '実行意欲';
+  if (/学び|勉強|理解|気づ/.test(t)) return '学び';
+  if (/良かっ|最高|満足|楽しかっ|素晴らしい/.test(t)) return '満足';
+  return 'その他';
+}
+
+function summarizeCommentVoc_(texts) {
+  const catCounts = {};
+  texts.forEach(t => {
+    const c = categorizeComment_(t);
+    catCounts[c] = (catCounts[c] || 0) + 1;
+  });
+  const catTop = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const words = extractTopWords_(texts, 5).map(([w, c]) => `${w}(${c})`);
+  return [
+    `回答件数: ${texts.length}件`,
+    `傾向カテゴリ: ${catTop.map(x => `${x[0]}(${x[1]})`).join(' / ') || 'データなし'}`,
+    `主要ワード: ${words.join(' / ') || 'データなし'}`
+  ];
+}
+
+function renderVocSplit() {
+  const purposeTexts = filteredRows
+    .map(r => String(r[ci('参加目的')] || '').trim())
+    .filter(Boolean);
+  const commentTexts = filteredRows
+    .map(r => String(r[ci('感想・メッセージ')] || '').trim())
+    .filter(Boolean);
+
+  const purposeWords = extractTopWords_(purposeTexts, 20);
+  const commentWords = extractTopWords_(commentTexts, 20);
+  renderWordCloud_('purposeWordCloud', purposeWords.slice(0, 40));
+  renderWordCloud_('commentWordCloud', commentWords.slice(0, 40));
+
+  renderChart('chartPurposeWordBar', 'bar', purposeWords.slice(0, 20).map(x => x[0]), purposeWords.slice(0, 20).map(x => x[1]), '出現回数', COLORS[0]);
+  renderChart('chartCommentWordBar', 'bar', commentWords.slice(0, 20).map(x => x[0]), commentWords.slice(0, 20).map(x => x[1]), '出現回数', COLORS[4]);
+
+  const purposeSummaryLines = summarizePurposeVoc_(purposeTexts);
+  const commentSummaryLines = summarizeCommentVoc_(commentTexts);
+  const purposeAiBlock = purposeAiSummary ? `<div style="margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:8px;background:#F8F9FA"><strong>Gemini要約:</strong><br>${escH(purposeAiSummary).replace(/\n/g, '<br>')}</div>` : '';
+  const commentAiBlock = commentAiSummary ? `<div style="margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:8px;background:#F8F9FA"><strong>Gemini要約:</strong><br>${escH(commentAiSummary).replace(/\n/g, '<br>')}</div>` : '';
+  document.getElementById('purposeSummary').innerHTML = `<ul style="padding-left:20px">${purposeSummaryLines.map(t => `<li>${escH(t)}</li>`).join('')}</ul>${purposeAiBlock}`;
+  document.getElementById('commentSummary').innerHTML = `<ul style="padding-left:20px">${commentSummaryLines.map(t => `<li>${escH(t)}</li>`).join('')}</ul>${commentAiBlock}`;
+
+  renderTextTable('tablePurpose', filteredRows, '参加目的', '参加目的カテゴリ_主');
+  renderTextTable('tableComments', filteredRows, '感想・メッセージ', null);
+}
+
+function renderMonthlyTextSummary() {
+  const table = document.getElementById('tableMonthlyTextSummary');
+  if (!table) return;
+  const groups = {};
+  filteredRows.forEach(r => {
+    const month = normalizeMonthString(valueAt_(r, '開催月')) || '未回答';
+    if (!groups[month]) groups[month] = [];
+    groups[month].push(r);
+  });
+
+  let html = '<thead><tr><th>開催月</th><th>回答数</th><th>参加目的</th><th>感想</th><th>深掘りリクエスト</th><th>実行アクション</th><th>主要カテゴリ</th><th>本文要約</th></tr></thead><tbody>';
+  Object.keys(groups).sort((a, b) => monthSortKey(a) - monthSortKey(b)).forEach(month => {
+    const rows = groups[month];
+    const filled = col => rows.filter(r => textValue_(r, col)).length;
+    const categories = topCategoriesForRows_(rows, '参加目的カテゴリ_主', 3).join(' / ') || 'データなし';
+    html += `<tr><td>${escH(month)}</td><td>${rows.length}</td><td>${filled('参加目的')}</td><td>${filled('感想・メッセージ')}</td><td>${filled('深掘りリクエスト')}</td><td>${filled('実行アクション')}</td><td>${escH(categories)}</td><td>${escPublicText_(summarizeMonthlyTexts_(rows))}</td></tr>`;
+  });
+  if (!Object.keys(groups).length) html += '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary)">対象データがありません</td></tr>';
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function buildVoiceSampleHtml_(rows, emptyMessage) {
+  if (!rows.length) return `<p style="color:var(--text-secondary)">${escH(emptyMessage)}</p>`;
+  return rows.slice(0, 5).map(r => {
+    const status = textValue_(r, '次回申込状況') || '未回答';
+    const month = normalizeMonthString(valueAt_(r, '開催月')) || '未回答';
+    const sat = textValue_(r, '目的達成度') || '-';
+    const purposeCat = textValue_(r, '参加目的カテゴリ_主') || '未分類';
+    const text = firstNonEmptyText_(r, ['感想・メッセージ', '参加目的', '深掘りリクエスト', '実行アクション']);
+    return `<div class="voice-sample">
+      <div class="voice-meta"><span class="badge badge-blue">${escH(month)}</span><span>${escH(status)}</span><span>達成度 ${escH(sat)}</span><span>${escH(purposeCat)}</span></div>
+      <div class="voice-text">${escPublicText_(text || '記入なし')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderApplicationVoiceSamples() {
+  const withIntentEl = document.getElementById('voiceWithIntent');
+  const withoutIntentEl = document.getElementById('voiceWithoutIntent');
+  if (!withIntentEl || !withoutIntentEl) return;
+  const rowsWithText = filteredRows.filter(r => firstNonEmptyText_(r, ['感想・メッセージ', '参加目的', '深掘りリクエスト', '実行アクション']));
+  const withIntent = rowsWithText.filter(r => {
+    const v = valueAt_(r, '次回申込状況');
+    return isNextApplicationConfirmed_(v) || isNextApplicationPendingIntent_(v);
+  });
+  const withoutIntent = rowsWithText.filter(r => {
+    const v = valueAt_(r, '次回申込状況');
+    return !isNextApplicationConfirmed_(v) && !isNextApplicationPendingIntent_(v);
+  });
+  withIntentEl.innerHTML = `<div class="ops-metric-sub" style="margin-bottom:8px">対象 ${withIntent.length}件 / 最大5件表示</div>` +
+    buildVoiceSampleHtml_(withIntent, '申込あり/意向ありのテキスト回答はありません。');
+  withoutIntentEl.innerHTML = `<div class="ops-metric-sub" style="margin-bottom:8px">対象 ${withoutIntent.length}件 / 最大5件表示</div>` +
+    buildVoiceSampleHtml_(withoutIntent, '申込なしのテキスト回答はありません。');
+}
+
+function renderEventVoiceTable() {
+  const table = document.getElementById('tableEventVoices');
+  const countEl = document.getElementById('eventVoiceCount');
+  if (!table) return;
+  const rows = filteredRows.filter(r => ['参加目的', '感想・メッセージ', '深掘りリクエスト', '実行アクション'].some(col => textValue_(r, col)));
+  if (countEl) countEl.textContent = `${rows.length}件`;
+  let html = '<thead><tr><th>イベント</th><th>開催月</th><th>申込状態</th><th>目的達成度</th><th>参加目的</th><th>感想</th><th>深掘り</th><th>実行アクション</th></tr></thead><tbody>';
+  rows.slice(0, 100).forEach(r => {
+    html += `<tr>
+      <td>${escH(eventLabelForRow_(r))}</td>
+      <td>${escH(normalizeMonthString(valueAt_(r, '開催月')) || '未回答')}</td>
+      <td>${escH(textValue_(r, '次回申込状況') || '未回答')}</td>
+      <td>${escH(textValue_(r, '目的達成度') || '-')}</td>
+      <td>${escPublicText_(textValue_(r, '参加目的'))}</td>
+      <td>${escPublicText_(textValue_(r, '感想・メッセージ'))}</td>
+      <td>${escPublicText_(textValue_(r, '深掘りリクエスト'))}</td>
+      <td>${escPublicText_(textValue_(r, '実行アクション'))}</td>
+    </tr>`;
+  });
+  if (rows.length > 100) {
+    html += `<tr><td colspan="8" style="text-align:center;color:var(--text-secondary)">他 ${rows.length - 100} 件...</td></tr>`;
+  }
+  if (!rows.length) html += '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary)">対象データがありません</td></tr>';
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function refreshGeminiVocSummary(type) {
+  const isPurpose = type === 'purpose';
+  const texts = filteredRows
+    .map(r => String(r[ci(isPurpose ? '参加目的' : '感想・メッセージ')] || '').trim())
+    .filter(Boolean)
+    .map(redactPersonalInfo_)
+    .slice(0, 120);
+
+  if (!texts.length) return;
+  const summaryId = isPurpose ? 'purposeSummary' : 'commentSummary';
+  const summaryEl = document.getElementById(summaryId);
+  if (summaryEl) summaryEl.innerHTML += '<p style="color:var(--text-secondary)">Gemini要約を生成中...</p>';
+
+  runGAS('generateGeminiVocSummary', {
+    type: isPurpose ? '参加目的' : '感想・メッセージ',
+    texts: texts,
+    filters: getCurrentFilterState()
+  }).then(res => {
+    if (isPurpose) purposeAiSummary = String(res || '').trim();
+    else commentAiSummary = String(res || '').trim();
+    renderVocSplit();
+  }).catch(err => {
+    alert('Gemini要約に失敗しました: ' + err);
+    renderVocSplit();
+  });
+}
+
+// ===== Action & Driver =====
+function computeDrivers_(rows) {
+  const targetTotal = rows.length;
+  const targetHit = rows.filter(r => isNextApplicationConfirmed_(r[ci('次回申込状況')])).length;
+  const baseRate = targetTotal ? pct(targetHit, targetTotal) : 0;
+  const features = ['職業', '認知経路', '参加目的カテゴリ_主', '頂点への道_受講状況', 'リピーター頻度帯'];
+  const drivers = [];
+
+  features.forEach(feature => {
+    const idx = ci(feature);
+    if (idx < 0 && feature !== 'リピーター頻度帯') return;
+    const grouped = {};
+    rows.forEach((r, rowIdx) => {
+      const rawValue = feature === 'リピーター頻度帯' ? getRowRepeatBand_(r, rowIdx) : String(r[idx] || '').trim();
+      const value = rawValue || '未回答';
+      if (!grouped[value]) grouped[value] = { total: 0, hit: 0, intentIncluded: 0 };
+      grouped[value].total++;
+      if (isNextApplicationConfirmed_(r[ci('次回申込状況')])) grouped[value].hit++;
+      if (isNextApplicationIntentIncluded_(r[ci('次回申込状況')])) grouped[value].intentIncluded++;
+    });
+    Object.entries(grouped).forEach(([value, s]) => {
+      if (s.total < 3) return;
+      const rate = pct(s.hit, s.total);
+      const intentIncludedRate = pct(s.intentIncluded, s.total);
+      drivers.push({
+        feature,
+        value,
+        total: s.total,
+        rate,
+        intentIncludedRate,
+        lift: rate - baseRate
+      });
+    });
+  });
+
+  return drivers.sort((a, b) => Math.abs(b.lift) - Math.abs(a.lift));
+}
+
+function renderDriverAnalysis() {
+  const drivers = computeDrivers_(filteredRows);
+  const top = drivers.slice(0, 10);
+  const labels = top.map(d => `${d.feature}:${d.value}`);
+  const data = top.map(d => Number(d.lift.toFixed(1)));
+  const colors = top.map(d => d.lift >= 0 ? '#34A853' : '#EA4335');
+
+  if (charts.chartDriver) charts.chartDriver.destroy();
+  const ctx = document.getElementById('chartDriver');
+  if (ctx) {
+    charts.chartDriver = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: '全体比 (pt)',
+          data,
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true },
+          y: {}
+        }
+      }
+    });
+  }
+
+  const table = document.getElementById('tableDriver');
+  if (!table) return;
+  let html = '<thead><tr><th>特徴量</th><th>値</th><th>件数</th><th>確定申込率</th><th>意向込み申込率</th><th>全体比</th></tr></thead><tbody>';
+  drivers.slice(0, 20).forEach(d => {
+    const diff = d.lift >= 0 ? `+${d.lift.toFixed(1)}pt` : `${d.lift.toFixed(1)}pt`;
+    html += `<tr><td>${escH(d.feature)}</td><td>${escH(d.value)}</td><td>${d.total}</td><td>${d.rate.toFixed(1)}%</td><td>${d.intentIncludedRate.toFixed(1)}%</td><td>${diff}</td></tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function renderActionCharts() {
+  const actD = countBy(filteredRows, ci('実行アクションカテゴリ'));
+  renderChart('chartActionCat', 'pie', actD.map(d => d[0]), actD.map(d => d[1]), '人数', COLORS);
+
+  const monthGroups = {};
+  filteredRows.forEach(r => {
+    const m = normalizeMonthString(r[ci('開催月')]);
+    const s = safeNumber(r[ci('目的達成度')]);
+    if (!m || s === null) return;
+    if (!monthGroups[m]) monthGroups[m] = { total: 0, five: 0 };
+    monthGroups[m].total++;
+    if (s === 5) monthGroups[m].five++;
+  });
+  const mLabels = Object.keys(monthGroups).sort((a, b) => monthSortKey(a) - monthSortKey(b));
+  const mRates = mLabels.map(m => pct(monthGroups[m].five, monthGroups[m].total).toFixed(1));
+  renderChart('chartSat5Trend', 'line', mLabels, mRates, '達成度5の割合(%)', COLORS[1]);
+
+  renderTextTable('tableActions', filteredRows, '実行アクション', '実行アクションカテゴリ');
+}
+
+function renderInitiativesTable() {
+  const table = document.getElementById('tableInitiatives');
+  if (!table) return;
+  const m = computeMetrics_(filteredRows);
+  const topPurpose = topCategoriesForRows_(filteredRows, '参加目的カテゴリ_主', 1)[0] || '主要カテゴリ未検出';
+  const topChannel = topCategoriesForRows_(filteredRows, '認知経路', 1)[0] || '認知経路未検出';
+  const highSatThreshold = Number(dashboardSetting_('highSatisfactionAchievementScore', 4));
+  const followCount = filteredRows.filter(r => {
+    const sat = safeNumber(valueAt_(r, '目的達成度'));
+    return sat !== null && sat >= highSatThreshold && isNextApplicationUnconfirmed_(valueAt_(r, '次回申込状況'));
+  }).length;
+  const rows = [
+    {
+      name: '高満足未申込フォロー',
+      target: `達成度${highSatThreshold}以上・確定申込なし`,
+      purpose: '満足から次回申込への転換を増やす',
+      metric: '確定申込率',
+      current: `${formatRate_(m.confirmedRate)} / 対象${followCount}件`,
+      action: '次回テーマと参加メリットを翌日案内'
+    },
+    {
+      name: 'LINE導線の再確認',
+      target: 'LINE未登録または登録状態不明',
+      purpose: '継続接点を増やす',
+      metric: 'LINE登録率',
+      current: formatRate_(m.lineRate),
+      action: '終了時案内とフォロー文面を見直す'
+    },
+    {
+      name: '主要テーマ訴求',
+      target: topPurpose,
+      purpose: '関心が強いテーマを次回告知に反映する',
+      metric: '意向込み申込率',
+      current: formatRate_(m.intentIncludedRate),
+      action: '告知文に主要カテゴリと深掘り内容を明記'
+    },
+    {
+      name: '流入チャネル別改善',
+      target: topChannel,
+      purpose: '反応の強い流入元を再現する',
+      metric: '回答数・確定申込率',
+      current: `${filteredRows.length}件 / ${formatRate_(m.confirmedRate)}`,
+      action: '上位チャネルの訴求を次回案内へ転用'
+    }
+  ];
+
+  let html = '<thead><tr><th>施策名</th><th>対象</th><th>目的</th><th>成功指標</th><th>現状</th><th>次アクション</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    html += `<tr><td>${escH(r.name)}</td><td>${escH(r.target)}</td><td>${escH(r.purpose)}</td><td>${escH(r.metric)}</td><td>${escH(r.current)}</td><td>${escH(r.action)}</td></tr>`;
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function renderFollowUpList() {
+  const table = document.getElementById('tableFollowUpList');
+  const countEl = document.getElementById('followUpListCount');
+  if (!table) return;
+  const highSatThreshold = Number(dashboardSetting_('highSatisfactionAchievementScore', 4));
+  const rows = filteredRows.filter(r => {
+    const sat = safeNumber(valueAt_(r, '目的達成度'));
+    return sat !== null && sat >= highSatThreshold && isNextApplicationUnconfirmed_(valueAt_(r, '次回申込状況'));
+  });
+  if (countEl) countEl.textContent = `${rows.length}件`;
+
+  let html = '<thead><tr><th>開催月</th><th>申込状態</th><th>達成度</th><th>参加目的カテゴリ</th><th>認知経路</th><th>代表コメント</th></tr></thead><tbody>';
+  rows.slice(0, 100).forEach(r => {
+    const comment = firstNonEmptyText_(r, ['感想・メッセージ', '深掘りリクエスト', '参加目的', '実行アクション']);
+    html += `<tr>
+      <td>${escH(normalizeMonthString(valueAt_(r, '開催月')) || '未回答')}</td>
+      <td>${escH(textValue_(r, '次回申込状況') || '未回答')}</td>
+      <td>${escH(textValue_(r, '目的達成度') || '-')}</td>
+      <td>${escH(textValue_(r, '参加目的カテゴリ_主') || '未分類')}</td>
+      <td>${escH(textValue_(r, '認知経路') || '未回答')}</td>
+      <td>${escPublicText_(comment || '記入なし')}</td>
+    </tr>`;
+  });
+  if (rows.length > 100) {
+    html += `<tr><td colspan="6" style="text-align:center;color:var(--text-secondary)">他 ${rows.length - 100} 件...</td></tr>`;
+  }
+  if (!rows.length) html += '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary)">対象データがありません</td></tr>';
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ===== Chart/Table Helpers =====
+function renderChart(canvasId, type, labels, data, label, colors) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  const isPie = type === 'pie' || type === 'doughnut';
+  const bgColor = Array.isArray(colors) ? colors : (isPie ? COLORS : colors);
+  charts[canvasId] = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        label,
+        data,
+        backgroundColor: isPie ? bgColor : (Array.isArray(bgColor) ? bgColor : bgColor + '99'),
+        borderColor: isPie ? '#fff' : (Array.isArray(bgColor) ? bgColor[0] : bgColor),
+        borderWidth: isPie ? 2 : 2,
+        tension: 0.3,
+        fill: type === 'line'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: isPie, position: 'bottom' } },
+      scales: isPie ? {} : { y: { beginAtZero: true } }
+    }
+  });
+}
+
+function renderTextTable(tableId, rows, textCol, catCol) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const tIdx = ci(textCol);
+  const cIdx = catCol ? ci(catCol) : -1;
+  if (tIdx < 0) {
+    table.innerHTML = '<tr><td>データなし</td></tr>';
+    return;
+  }
+
+  const texts = rows.filter(r => r[tIdx] && String(r[tIdx]).trim());
+  let html = '<thead><tr><th style="width:40px">No.</th><th>回答内容</th>';
+  if (cIdx >= 0) html += '<th style="width:160px">カテゴリ</th>';
+  html += '</tr></thead><tbody>';
+
+  texts.slice(0, 50).forEach((r, i) => {
+    const cat = cIdx >= 0 ? String(r[cIdx] || '') : '';
+    const badgeClass = ['badge-blue','badge-green','badge-yellow','badge-purple','badge-red'][i % 5];
+    html += `<tr><td>${i + 1}</td><td>${escPublicText_(String(r[tIdx]))}</td>`;
+    if (cIdx >= 0) html += `<td><span class="badge ${badgeClass}">${escH(cat || '未分類')}</span></td>`;
+    html += '</tr>';
+  });
+
+  if (texts.length > 50) {
+    html += `<tr><td colspan="${cIdx >= 0 ? 3 : 2}" style="text-align:center;color:var(--text-secondary)">他 ${texts.length - 50} 件...</td></tr>`;
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ===== Tab 4: Month Analysis =====
+function buildMonthSelector(months) {
+  const sel = document.getElementById('monthSelect');
+  const btn = document.getElementById('loadMonthBtn');
+  if (!sel || !btn) return;
+
+  sel.innerHTML = '';
+  const sorted = [...new Set((months || []).map(normalizeMonthString).filter(Boolean))]
+    .sort((a, b) => monthSortKey(a) - monthSortKey(b));
+  if (!sorted.length) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '月データがありません';
+    sel.appendChild(opt);
+    btn.disabled = true;
+    document.getElementById('monthAnalysisContent').innerHTML =
+      '<p style="color:var(--text-secondary)">分析可能な月がありません。「全データを再処理する」を実行してください。</p>';
+    return;
+  }
+
+  sorted.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    sel.appendChild(opt);
+  });
+  sel.value = sorted[sorted.length - 1];
+  btn.disabled = false;
+}
+
+function buildLocalMonthDetailData_(full, targetMonth) {
+  const rows = full.rows || [];
+  const normalizedTarget = normalizeMonthString(targetMonth);
+  const monthRows = rows.filter(r => normalizeMonthString(localValue_(full, r, '開催月')) === normalizedTarget);
+  if (!monthRows.length) return null;
+
+  const nums = (sourceRows, col) => sourceRows.map(r => safeNumber(localValue_(full, r, col))).filter(v => v !== null);
+  const allSat = nums(rows, '目的達成度');
+  const monthSat = nums(monthRows, '目的達成度');
+  const localCountBy = (sourceRows, col) => {
+    const m = {};
+    sourceRows.forEach(r => {
+      const v = String(localValue_(full, r, col) || '').trim() || 'その他';
+      m[v] = (m[v] || 0) + 1;
+    });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  };
+  const getTexts = col => monthRows.map(r => String(localValue_(full, r, col) || '').trim()).filter(Boolean);
+  const lineCount = monthRows.filter(r => isCommunicationRegistered(localValue_(full, r, 'LINE登録状況'))).length;
+  const nextCount = monthRows.filter(r => isNextApplicationConfirmed_(localValue_(full, r, '次回申込状況'))).length;
+  const repeaterCount = monthRows.filter(r => String(localValue_(full, r, 'リピーターフラグ') || '').trim() === 'リピーター').length;
+  const allText = ['参加目的', '実行アクション', '感想・メッセージ', '特に学びになったこと', '深掘りリクエスト']
+    .flatMap(col => getTexts(col));
+
+  return {
+    month: normalizedTarget,
+    kpi: {
+      count: monthRows.length,
+      totalCount: rows.length,
+      avgSatisfaction: average(monthSat),
+      totalAvgSatisfaction: average(allSat),
+      sat5Rate: monthSat.length ? pct(monthSat.filter(s => s === 5).length, monthSat.length) : 0,
+      totalSat5Rate: allSat.length ? pct(allSat.filter(s => s === 5).length, allSat.length) : 0,
+      lineRate: monthRows.length ? pct(lineCount, monthRows.length) : 0,
+      nextRate: monthRows.length ? pct(nextCount, monthRows.length) : 0,
+      repeaterCount: repeaterCount
+    },
+    jobDist: localCountBy(monthRows, '職業'),
+    channelDist: localCountBy(monthRows, '認知経路'),
+    purposeDist: localCountBy(monthRows, '参加目的カテゴリ_主'),
+    studyHistoryDist: localCountBy(monthRows, '頂点への道_受講状況'),
+    satDist: [5, 4, 3, 2, 1].map(score => ({ score, count: monthSat.filter(v => v === score).length })),
+    specialData: {},
+    topWords: extractTopWords_(allText, 30),
+    purposes: getTexts('参加目的'),
+    actions: getTexts('実行アクション'),
+    comments: getTexts('感想・メッセージ')
+  };
+}
+
+function loadSelectedMonth() {
+  const sel = document.getElementById('monthSelect');
+  if (!sel || !sel.value) return;
+  loadMonthAnalysis(sel.value);
+}
+
+function loadMonthAnalysis(month) {
+  const content = document.getElementById('monthAnalysisContent');
+  content.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">分析データを生成中...</p></div>';
+  runGAS('getMonthDetailData', normalizeMonthString(month)).then(data => {
+    if (!data) {
+      content.innerHTML = '<p>データが見つかりません</p>';
+      return;
+    }
+    renderMonthAnalysis(data);
+  }).catch(err => {
+    content.innerHTML = '<p style="color:#EA4335">エラー: ' + escH(String(err)) + '</p>';
+  });
+}
+
+function renderMonthAnalysis(d) {
+  const content = document.getElementById('monthAnalysisContent');
+  const k = d.kpi;
+  const cmp = (a, b) => {
+    const diff = (a - b).toFixed(1);
+    if (diff > 0) return `<span class="cmp-up">▲ +${diff}</span>`;
+    if (diff < 0) return `<span class="cmp-down">▼ ${diff}</span>`;
+    return `<span class="cmp-neutral">― 0</span>`;
+  };
+
+  let html = `
+    <div class="kpi-grid">
+      ${kpiCard('回答数', k.count, `全体: ${k.totalCount}件`)}
+      ${kpiCard('平均達成度', k.avgSatisfaction.toFixed(2), `全体: ${k.totalAvgSatisfaction.toFixed(2)} ${cmp(k.avgSatisfaction, k.totalAvgSatisfaction)}`, true)}
+      ${kpiCard('達成度5の割合', k.sat5Rate.toFixed(1) + '%', `全体: ${k.totalSat5Rate.toFixed(1)}% ${cmp(k.sat5Rate, k.totalSat5Rate)}`)}
+      ${kpiCard('LINE登録率', k.lineRate.toFixed(1) + '%', '')}
+      ${kpiCard('確定申込率', k.nextRate.toFixed(1) + '%', '')}
+      ${kpiCard('リピーター数', k.repeaterCount, '名')}
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card"><div class="chart-title">職業分布</div><div class="chart-wrapper"><canvas id="chartM_Job"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">認知経路</div><div class="chart-wrapper"><canvas id="chartM_Channel"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">参加目的</div><div class="chart-wrapper"><canvas id="chartM_Purpose"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">受講歴（未受講 / 受講済み / JPSA会員）</div><div class="chart-wrapper"><canvas id="chartM_Study"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">達成度分布</div><div class="chart-wrapper"><canvas id="chartM_Sat"></canvas></div></div>
+    </div>`;
+
+  if (d.topWords && d.topWords.length) {
+    const maxW = Math.max(...d.topWords.map(w => w[1]));
+    html += `<div class="chart-card" style="margin-top:16px"><div class="chart-title">頻出ワード（${escH(d.month)}）</div><div class="word-cloud">`;
+    d.topWords.forEach(([word, count]) => {
+      const sz = Math.max(12, Math.min(28, 12 + (count / maxW) * 16));
+      html += `<span class="word-tag" style="font-size:${sz}px">${escH(word)} (${count})</span>`;
+    });
+    html += '</div></div>';
+  }
+
+  if (d.specialData && Object.keys(d.specialData).length) {
+    html += '<div class="chart-card" style="margin-top:16px"><div class="chart-title">月固有の質問項目</div>';
+    Object.entries(d.specialData).forEach(([col, vals]) => {
+      html += `<h4 style="margin:12px 0 8px;color:var(--text-secondary)">${escH(col)}</h4>`;
+      const isShort = vals.every(v => String(v).length < 30);
+      if (isShort) {
+        const counts = {};
+        vals.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+        Object.entries(counts).sort((a, b) => b[1] - a[1]).forEach(([v, c]) => {
+          html += `<span class="badge badge-blue">${escH(v)}: ${c}名</span>`;
+        });
+        html += '</div>';
+      } else {
+        html += '<div class="table-wrapper" style="max-height:200px"><table class="data-table"><thead><tr><th>No.</th><th>回答</th></tr></thead><tbody>';
+        vals.forEach((v, i) => { html += `<tr><td>${i + 1}</td><td>${escH(v)}</td></tr>`; });
+        html += '</tbody></table></div>';
+      }
+    });
+    html += '</div>';
+  }
+
+  const textSections = [
+    { data: d.purposes, label: '参加目的' },
+    { data: d.actions, label: '実行アクション' },
+    { data: d.comments, label: '感想・メッセージ' }
+  ];
+  textSections.forEach(sec => {
+    if (sec.data && sec.data.length) {
+      html += `<div class="chart-card" style="margin-top:16px"><div class="chart-title">${sec.label}</div>`;
+      html += '<div class="table-wrapper"><table class="data-table"><thead><tr><th style="width:40px">No.</th><th>回答内容</th></tr></thead><tbody>';
+      sec.data.forEach((t, i) => { html += `<tr><td>${i + 1}</td><td>${escPublicText_(t)}</td></tr>`; });
+      html += '</tbody></table></div></div>';
+    }
+  });
+
+  content.innerHTML = html;
+  setTimeout(() => {
+    if (d.jobDist) renderChart('chartM_Job', 'pie', d.jobDist.map(x => x[0]), d.jobDist.map(x => x[1]), '人数', COLORS);
+    if (d.channelDist) renderChart('chartM_Channel', 'bar', d.channelDist.map(x => x[0]), d.channelDist.map(x => x[1]), '人数', COLORS[0]);
+    if (d.purposeDist) renderChart('chartM_Purpose', 'bar', d.purposeDist.map(x => x[0]), d.purposeDist.map(x => x[1]), '人数', COLORS[4]);
+    if (d.studyHistoryDist) renderChart('chartM_Study', 'bar', d.studyHistoryDist.map(x => x[0]), d.studyHistoryDist.map(x => x[1]), '人数', COLORS[2]);
+    if (d.satDist) renderChart('chartM_Sat', 'doughnut', d.satDist.map(x => String(x.score)), d.satDist.map(x => x.count), '人数', [COLORS[1], COLORS[0], COLORS[2], COLORS[3], COLORS[5]]);
+  }, 100);
+}
+</script>
+</body>
+</html>

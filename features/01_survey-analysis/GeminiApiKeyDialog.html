@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Gemini APIキー設定</title>
+  <style>
+    body { font-family: 'Google Sans', 'Noto Sans JP', sans-serif; padding: 16px; color: #202124; }
+    h2 { margin: 0 0 10px; color: #1A73E8; font-size: 18px; }
+    .note { font-size: 12px; color: #5F6368; line-height: 1.7; margin-bottom: 10px; }
+    .status { background: #F8F9FA; border: 1px solid #E8EAED; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 12px; }
+    label { display: block; margin: 8px 0 6px; font-size: 12px; color: #5F6368; font-weight: 600; }
+    input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid #DADCE0; border-radius: 8px; font-size: 13px; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    button { padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; }
+    .primary { background: #1A73E8; color: #FFF; }
+    .danger { background: #EA4335; color: #FFF; }
+    .muted { background: #F1F3F4; color: #202124; }
+    .msg { margin-top: 10px; font-size: 12px; color: #5F6368; min-height: 16px; }
+  </style>
+</head>
+<body>
+  <h2>🔑 Gemini APIキー設定</h2>
+  <div class="note">
+    ここで設定したキーは Apps Script プロパティに保存されます。<br>
+    スプレッドシートには平文キーを保存しません（状態のみ記録）。
+  </div>
+
+  <div class="status" id="statusBox">状態を取得中...</div>
+
+  <label for="apiKey">Gemini APIキー</label>
+  <input id="apiKey" type="password" placeholder="AIza..." autocomplete="off">
+
+  <div class="actions">
+    <button class="primary" onclick="saveKey()">保存</button>
+    <button class="danger" onclick="clearKey()">削除</button>
+    <button class="muted" onclick="reloadStatus()">再読込</button>
+  </div>
+  <div class="msg" id="msg"></div>
+
+  <script>
+    function setMsg(text, isError) {
+      const el = document.getElementById('msg');
+      el.textContent = text || '';
+      el.style.color = isError ? '#C5221F' : '#5F6368';
+    }
+
+    function renderStatus(status) {
+      const configured = status && status.configured;
+      const masked = status && status.maskedKey ? status.maskedKey : '未設定';
+      const updatedAt = status && status.updatedAt ? status.updatedAt : '未記録';
+      document.getElementById('statusBox').innerHTML =
+        `状態: <strong>${configured ? '設定済み' : '未設定'}</strong><br>` +
+        `キー: ${masked}<br>` +
+        `更新日時: ${updatedAt}`;
+    }
+
+    function reloadStatus() {
+      setMsg('状態を確認しています...', false);
+      google.script.run
+        .withSuccessHandler((status) => {
+          renderStatus(status);
+          setMsg('状態を更新しました。', false);
+        })
+        .withFailureHandler((err) => {
+          setMsg('状態確認に失敗: ' + (err && err.message ? err.message : err), true);
+        })
+        .getGeminiApiKeyStatus();
+    }
+
+    function saveKey() {
+      const key = document.getElementById('apiKey').value.trim();
+      if (!key) {
+        setMsg('APIキーを入力してください。', true);
+        return;
+      }
+      setMsg('保存中...', false);
+      google.script.run
+        .withSuccessHandler((status) => {
+          renderStatus(status);
+          document.getElementById('apiKey').value = '';
+          setMsg('保存しました。', false);
+        })
+        .withFailureHandler((err) => {
+          setMsg('保存に失敗: ' + (err && err.message ? err.message : err), true);
+        })
+        .saveGeminiApiKey(key);
+    }
+
+    function clearKey() {
+      if (!confirm('保存済みのGemini APIキーを削除します。よろしいですか？')) return;
+      setMsg('削除中...', false);
+      google.script.run
+        .withSuccessHandler((status) => {
+          renderStatus(status);
+          setMsg('削除しました。', false);
+        })
+        .withFailureHandler((err) => {
+          setMsg('削除に失敗: ' + (err && err.message ? err.message : err), true);
+        })
+        .clearGeminiApiKey();
+    }
+
+    reloadStatus();
+  </script>
+</body>
+</html>
