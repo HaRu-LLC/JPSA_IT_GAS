@@ -424,6 +424,7 @@ function getMonthDetailData(targetMonth) {
       if (r[idx] && String(r[idx]).trim()) allText += ' ' + maskDashboardPublicText_(r[idx], namePatterns);
     });
   }
+  allText = allText.replace(/\[(?:氏名|メール|電話番号)非表示\]/g, ' ');
 
   // Simple word extraction (mirrors extractWords_ logic)
   const wordCounts = {};
@@ -436,12 +437,13 @@ function getMonthDetailData(targetMonth) {
   const stops = new Set(['する','いる','なる','ある','できる','思う','こと','もの','ため','よう',
     'それ','これ','あれ','どれ','この','その','あの','など','から','まで','について','として',
     'the','and','for','that','this','with','from','have','been']);
+  const maskWords = new Set(['氏名非表示','メール非表示','電話番号非表示','非表示','氏名','電話番号']);
 
   for (const pat of patterns) {
     const matches = allText.match(pat) || [];
     for (const w of matches) {
       const lw = w.toLowerCase();
-      if (!stops.has(lw) && lw.length >= 2) {
+      if (!stops.has(lw) && !maskWords.has(w) && lw.length >= 2) {
         wordCounts[w] = (wordCounts[w] || 0) + 1;
       }
     }

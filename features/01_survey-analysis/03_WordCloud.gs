@@ -16,6 +16,15 @@ const STOP_WORDS = new Set([
   'the', 'and', 'for', 'with', 'this', 'that', 'from', 'was', 'are',
 ]);
 
+const MASK_WORDS = new Set([
+  '氏名非表示',
+  'メール非表示',
+  '電話番号非表示',
+  '非表示',
+  '氏名',
+  '電話番号'
+]);
+
 /**
  * ワードクラウドデータを更新
  */
@@ -74,15 +83,16 @@ function updateWordCloud() {
  */
 function extractWords_(text) {
   const counts = {};
+  const sourceText = String(text || '').replace(/\[(?:氏名|メール|電話番号)非表示\]/g, ' ');
 
   // カタカナ語（2文字以上）
-  const katakana = text.match(/[ァ-ヶー]{2,}/g) || [];
+  const katakana = sourceText.match(/[ァ-ヶー]{2,}/g) || [];
   // 英字語（2文字以上）+ 特別な短い語
-  const english = text.match(/[a-zA-Z]{2,}/g) || [];
+  const english = sourceText.match(/[a-zA-Z]{2,}/g) || [];
   // 特別な短い語
-  const special = text.match(/\bAI\b|\bIT\b|\bAT\b|\bCT\b/g) || [];
+  const special = sourceText.match(/\bAI\b|\bIT\b|\bAT\b|\bCT\b/g) || [];
   // 漢字語（2〜6文字）
-  const kanji = text.match(/[\u4e00-\u9fff]{2,6}/g) || [];
+  const kanji = sourceText.match(/[\u4e00-\u9fff]{2,6}/g) || [];
 
   const allWords = [...katakana, ...english, ...special, ...kanji];
 
@@ -90,6 +100,7 @@ function extractWords_(text) {
     const w = word.trim();
     if (w.length < 2 && !['AI', 'IT', 'AT', 'CT'].includes(w)) continue;
     if (STOP_WORDS.has(w.toLowerCase())) continue;
+    if (MASK_WORDS.has(w)) continue;
 
     counts[w] = (counts[w] || 0) + 1;
   }

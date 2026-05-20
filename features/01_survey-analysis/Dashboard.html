@@ -1328,7 +1328,7 @@ function renderSegmentTable() {
 
 // ===== VOC Split =====
 function extractTopWords_(texts, limit) {
-  const allText = texts.join(' ');
+  const allText = texts.join(' ').replace(/\[(?:氏名|メール|電話番号)非表示\]/g, ' ');
   const wordCounts = {};
   const patterns = [
     /[ァ-ヶー]{2,}/g,
@@ -1337,12 +1337,13 @@ function extractTopWords_(texts, limit) {
     /[\u4e00-\u9fff]{2,6}/g
   ];
   const stops = new Set(['する','いる','なる','ある','できる','思う','こと','もの','ため','よう','それ','これ','あれ','どれ','この','その','あの','など','から','まで','について','として','です','ます','した','して','the','and','for','that','this','with','from','have','been']);
+  const maskWords = new Set(['氏名非表示','メール非表示','電話番号非表示','非表示','氏名','電話番号']);
 
   patterns.forEach(pat => {
     const matches = allText.match(pat) || [];
     matches.forEach(w => {
       const lw = w.toLowerCase();
-      if (stops.has(lw) || lw.length < 2) return;
+      if (stops.has(lw) || maskWords.has(w) || lw.length < 2) return;
       wordCounts[w] = (wordCounts[w] || 0) + 1;
     });
   });
