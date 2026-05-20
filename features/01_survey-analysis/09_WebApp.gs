@@ -130,26 +130,27 @@ function getFullData() {
     name: headers.indexOf('氏名'),
     phone: headers.indexOf('電話番号')
   };
-  const namePatterns = buildDashboardNamePatterns_(data.slice(1), participantSourceIndexes.name);
-
   return {
     headers: keepIndexes.map(item => item.header).concat(['参加者ID']),
     rows: data.slice(1).map((row, rowIndex) => keepIndexes.map(item => {
       const cell = row[item.index];
-      return cell instanceof Date ? Utilities.formatDate(cell, 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss') : maskDashboardPublicText_(cell, namePatterns);
+      return cell instanceof Date ? Utilities.formatDate(cell, 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss') : maskDashboardContactText_(cell);
     }).concat([buildDashboardParticipantId_(row, rowIndex, participantSourceIndexes)]))
   };
 }
 
-function maskDashboardPublicText_(value, namePatterns) {
-  let s = String(value === null || value === undefined ? '' : value);
+function maskDashboardContactText_(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[メール非表示]')
+    .replace(/(?:\+81[-\s]?)?0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}/g, '[電話番号非表示]');
+}
+
+function maskDashboardExternalText_(value, namePatterns) {
+  let s = maskDashboardContactText_(value);
   (namePatterns || []).forEach(name => {
     s = s.split(name).join('[氏名非表示]');
   });
-  return s
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[メール非表示]')
-    .replace(/(?:\+81[-\s]?)?0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}/g, '[電話番号非表示]')
-    .replace(/([一-龥々ぁ-んァ-ンー]{1,8})(さん|さま|様|社長|シニア)/g, '[氏名非表示]');
+  return s.replace(/([一-龥々ぁ-んァ-ンー]{1,8})(さん|さま|様|社長|シニア)/g, '[氏名非表示]');
 }
 
 function buildDashboardParticipantId_(row, rowIndex, indexes) {
@@ -342,7 +343,6 @@ function getMonthDetailData(targetMonth) {
   const headers = data[0];
   const allRows = data.slice(1);
   const col = (name) => headers.indexOf(name);
-  const namePatterns = buildDashboardNamePatterns_(allRows, col('氏名'));
 
   const normalizedTarget = normalizeMonthValue_(targetMonth);
   const monthRows = allRows.filter(r => normalizeMonthValue_(r[col('開催月')]) === normalizedTarget);
@@ -400,7 +400,7 @@ function getMonthDetailData(targetMonth) {
   const getTexts = (colName) => {
     const idx = col(colName);
     if (idx < 0) return [];
-    return monthRows.map(r => r[idx]).filter(v => v && String(v).trim()).map(v => maskDashboardPublicText_(v, namePatterns));
+    return monthRows.map(r => r[idx]).filter(v => v && String(v).trim()).map(maskDashboardContactText_);
   };
 
   // -- 月固有カラム --
@@ -410,7 +410,7 @@ function getMonthDetailData(targetMonth) {
   for (const sc of specialCols) {
     const idx = col(sc);
     if (idx < 0) continue;
-    const vals = monthRows.map(r => r[idx]).filter(v => v && String(v).trim()).map(v => maskDashboardPublicText_(v, namePatterns));
+    const vals = monthRows.map(r => r[idx]).filter(v => v && String(v).trim()).map(maskDashboardContactText_);
     if (vals.length > 0) specialData[sc] = vals;
   }
 
@@ -421,7 +421,7 @@ function getMonthDetailData(targetMonth) {
     const idx = col(tc);
     if (idx < 0) continue;
     monthRows.forEach(r => {
-      if (r[idx] && String(r[idx]).trim()) allText += ' ' + maskDashboardPublicText_(r[idx], namePatterns);
+      if (r[idx] && String(r[idx]).trim()) allText += ' ' + maskDashboardContactText_(r[idx]);
     });
   }
   allText = allText.replace(/\[(?:氏名|メール|電話番号)非表示\]/g, ' ');
@@ -504,7 +504,7 @@ function generateGeminiVocSummary(payload) {
   const type = String(p.type || 'VOC').trim();
   const namePatterns = buildDashboardNamePatternsFromProcessedSheet_();
   const texts = Array.isArray(p.texts)
-    ? p.texts.map(text => maskDashboardPublicText_(text, namePatterns)).map(t => t.trim()).filter(Boolean)
+    ? p.texts.map(text => maskDashboardExternalText_(text, namePatterns)).map(t => t.trim()).filter(Boolean)
     : [];
   const filters = p.filters || {};
 

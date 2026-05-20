@@ -644,25 +644,14 @@ function textValue_(row, colName) {
   return String(valueAt_(row, colName) || '').trim();
 }
 
-function redactPersonalInfo_(text) {
-  let s = String(text || '');
-  s = s.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[メール非表示]');
-  s = s.replace(/(?:\+81[-\s]?)?0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}/g, '[電話番号非表示]');
-  const nameIdx = ci('氏名');
-  if (nameIdx >= 0) {
-    const names = [...new Set(rawData.rows.map(r => String(r[nameIdx] || '').trim()).filter(n => n.length >= 2))];
-    names.forEach(name => {
-      const compact = name.replace(/[ 　]/g, '');
-      [name, compact].filter(n => n.length >= 2).forEach(n => {
-        s = s.split(n).join('[氏名非表示]');
-      });
-    });
-  }
-  return s;
+function redactContactInfo_(text) {
+  return String(text || '')
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[メール非表示]')
+    .replace(/(?:\+81[-\s]?)?0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}/g, '[電話番号非表示]');
 }
 
 function escPublicText_(text) {
-  return escH(redactPersonalInfo_(text));
+  return escH(redactContactInfo_(text));
 }
 
 function formatRate_(value) {
@@ -1515,7 +1504,7 @@ function refreshGeminiVocSummary(type) {
   const texts = filteredRows
     .map(r => String(r[ci(isPurpose ? '参加目的' : '感想・メッセージ')] || '').trim())
     .filter(Boolean)
-    .map(redactPersonalInfo_)
+    .map(redactContactInfo_)
     .slice(0, 120);
 
   if (!texts.length) return;
